@@ -3,7 +3,7 @@
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
 user-friendly SQLite database. 
-Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴🍹😎.
+Download the BAG, run a single Python script.
 
 ## Introduction ##
 
@@ -35,6 +35,7 @@ have their own, much more [complete parser](https://github.com/nlextract/NLExtra
 * [Download the BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
 * The gemeenten file is already in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
 * Run `import_bag.py`
+* Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
 
 ## Python commands ##
 
