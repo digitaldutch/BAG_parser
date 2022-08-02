@@ -3,7 +3,7 @@
 ## TL;DR
 Turns ugly, huge and complex XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
 beautiful SQLite database. 
-Download BAG, run a single Python script and go drink cappuccino's for 1 hour.
+Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴🍹😎.
 
 ## Introduction ##
 
@@ -43,6 +43,10 @@ Checks de SQLite database for info and errors. import_bag.py also performs these
 
 ### utils_sqlite_shrink.py ###
 Reduces the SQlite database size by removing tables that are no longer needed BAG tables due to the new addresses table.
+The parser also does this if you set `delete_no_longer_needed_bag_tables` in [config.py](config.py) to true.
 
 ## License ##
-This software is made available under the [MIT license](LICENSE).
+
+
+## License ##
+This software is made available under the [GNU General Public License](LICENSE.md).
