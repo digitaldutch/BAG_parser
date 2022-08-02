@@ -1,3 +1,4 @@
+import os, sys
 import zipfile
 import utils
 import config
@@ -6,6 +7,8 @@ from bag.bag_parser import BagParser
 from bag.gemeente_parser import GemeentenParser
 
 utils.print_log('BAG import into sqlite: start')
+
+if not os.path.exists(config.file_bag): sys.exit('BAG file not found. See readme.MD')
 
 # unzip BAG file to temp folder
 utils.print_log('unzip BAG to temp folder: ' + config.file_bag)
