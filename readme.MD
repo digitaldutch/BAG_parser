@@ -16,7 +16,7 @@ It also does not include municipalities or provinces and provides coordinates us
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
 This is why several companies make a lot of money🤑 selling user friendlier versions of the BAG.
 
-This Python utility parses this BAG database and turns it into a clean, easy to read & use SQLite database.
+This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
 longitude coordinates. Year of construction, floor area and intended use of buildings are also provided. Several 
 tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) are merged into a general addresses
@@ -29,11 +29,7 @@ databases.
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* Download the BAG parser and put all files in a folder.
-* Create a input subfolder.
-* Download the [latest BAG database (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save it in the data subfolder.
-* Download the latest [Gemeenten/Provincies tabel](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar) from the CBS and save it in the data subfolder.
-* Read the [config.py](config.py) file. It tells you to create a `config_secret.py` file with your database connection info and the locations of the BAG and gemeenten table. Never check this one into git.
+* Read instructions in the [config.py](config.py) file. It tells you where to download and save the BAG file.
 * Run `import_bag.py`
 
 ## Python commands ##

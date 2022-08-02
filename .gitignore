@@ -1,7 +1,6 @@
 .idea
-/config_secret.py
 /temp
 /temp_xml
 /venv/
-/input/lvbag-extract-nl-2022-07-08.zip
+/input/bag.zip
 /output/
