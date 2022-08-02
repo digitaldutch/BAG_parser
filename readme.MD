@@ -1,8 +1,8 @@
 # BAG parser
 
 ## TL;DR
-Turns ugly, huge and complex XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-beautiful SQLite database. 
+Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
+beautiful user-friendly SQLite database. 
 Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴🍹😎.
 
 ## Introduction ##
@@ -10,7 +10,7 @@ Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴�
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
 from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
 
-The bad news is: it comes in an ugly and unreadable XML format using thousands of zipped XML files, which will quickly 
+The bad news is: it comes in a complex and hard to read XML format using thousands of zipped XML files, which will quickly 
 temper your initial enthusiasm to quite a low level. 
 It also does not include municipalities or provinces and provides coordinates using a system from the dark ages named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
