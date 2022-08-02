@@ -12,6 +12,7 @@ if not os.path.exists(config.file_bag): sys.exit('BAG file not found. See readme
 
 # unzip BAG file to temp folder
 utils.print_log('unzip BAG to temp folder: ' + config.file_bag)
+if not os.path.exists('temp'): os.makedirs('temp')
 utils.empty_folder('temp')
 with zipfile.ZipFile(config.file_bag, 'r') as file:
     file.extractall('temp')

@@ -1,8 +1,7 @@
 # BAG XML parser
 
+import os, time, zipfile
 from xml.etree import ElementTree
-import time
-import zipfile
 import utils
 from _datetime import datetime
 
@@ -26,6 +25,8 @@ class BagParser:
         self.db_tag_parent_fields = {}
         self.today_string = datetime.today().strftime("%Y-%m-%d")
         self.data_init = {}
+
+        if not os.path.exists(self.folder_temp_xml): os.makedirs(self.folder_temp_xml)
 
     def parse(self, tag_name):
         self.tag_name = tag_name
