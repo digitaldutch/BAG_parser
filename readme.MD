@@ -2,7 +2,7 @@
 
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-beautiful user-friendly SQLite database. 
+user-friendly SQLite database. 
 Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴🍹😎.
 
 ## Introduction ##
@@ -10,20 +10,24 @@ Download BAG, run a single Python script and go drink cocktails for 1 hour 🌴�
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
 from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
 
-The bad news is: it comes in a complex and hard to read XML format using thousands of zipped XML files, which will quickly 
-temper your initial enthusiasm to quite a low level. 
-It also does not include municipalities or provinces and provides coordinates using a system from the dark ages named 
+The bad news is: it comes in a complex and hard to read XML format using thousands of zipped XML files, 
+which will quickly temper your initial enthusiasm to quite low levels. 
+It also does not include municipalities or provinces and provides coordinates using an obscure system named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
 This is why several companies make a lot of money🤑 selling user friendlier versions of the BAG.
 
 This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
 longitude coordinates. Year of construction, floor area and intended use of buildings are also provided. Several 
-tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) are merged into a general addresses
-table. Only active addresses are included.
+tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) are merged into a general 'adressen'
+table. Only active addresses are included. 
 
 The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
 databases. 
+
+Just a limited amount of data is parsed. If you need more data, buy it from [nlextract](https://nlextract.nl/), who
+have their own, much more [complete parser](https://github.com/nlextract/NLExtract).
+
 
 ## Requirements ##
 * Python 3.8 works, but 3.10 is 20% quicker.
