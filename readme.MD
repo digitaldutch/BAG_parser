@@ -14,7 +14,6 @@ The bad news is: it comes in a complex and hard to read XML format using thousan
 which will quickly temper your initial enthusiasm to quite low levels. 
 It also does not include municipalities or provinces and provides coordinates using an obscure system named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
-This is why several companies make a lot of money🤑 selling user friendlier versions of the BAG.
 
 This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
@@ -48,9 +47,6 @@ Checks de SQLite database for info and errors. import_bag.py also performs these
 ### utils_sqlite_shrink.py ###
 Reduces the SQlite database size by removing tables that are no longer needed BAG tables due to the new addresses table.
 The parser also does this if you set `delete_no_longer_needed_bag_tables` in [config.py](config.py) to true.
-
-## License ##
-
 
 ## License ##
 This software is made available under the [GNU General Public License](LICENSE.md).
