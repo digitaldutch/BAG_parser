@@ -1,7 +1,7 @@
 import locale
 import config_secret  # Important: You need to create this file yourself. See below.
 
-version = 20
+version = 21
 version_date = '2 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -20,7 +20,7 @@ locale.setlocale(locale.LC_ALL, 'nl_NL')
 # - Local configuration info is not stored in source code repository, like git.
 
 # Create a new file named config_secret.php, exclude it from git.
-# Copy the code below and fill in the configuration
+# Copy the code below and save it as config_secret.py.
 # ----------
 # file_bag = 'input/downloaded_bag_file.zip'
 # file_gemeenten = 'input/Gemeenten alfabetisch 2022 - 24 maart.csv'
@@ -28,6 +28,7 @@ locale.setlocale(locale.LC_ALL, 'nl_NL')
 # file_log = 'output/bag_importer.log'
 # ----------
 
+# Settings are read from config_secret.py file
 file_bag = config_secret.file_bag
 file_gemeenten = config_secret.file_gemeenten
 file_db_sqlite = config_secret.file_db_sqlite
