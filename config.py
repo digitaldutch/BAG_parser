@@ -1,23 +1,14 @@
 import locale
 
-version = 21
+version = 23
 version_date = '2 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
-# BAG download:
-# https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract
-# Save the file as 'bag.zip' in the input subfolder
-
-# Gemeenten/provincies table download:
-# The latest table is already included in git, but you can upgrade yourself by downloading it from the CDB website.
-# https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar
-# Save the file as 'gemeenten.csv' in the input subfolder
-
-# BAG zip file downloaded from kadaster
+# Location of BAG zip file downloaded from kadaster. See readme.MD for instructions.
 file_bag = 'input/bag.zip'
 
-# gemeenten file downloaded from cbs.nl
+# Location of gemeenten file downloaded from cbs.nl. See readme.MD for instructions.
 file_gemeenten = 'input/gemeenten.csv'
 
 # output SQLite database with parsed BAG

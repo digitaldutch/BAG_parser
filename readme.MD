@@ -29,7 +29,8 @@ databases.
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* Read instructions in the [config.py](config.py) file. It tells you where to download and save the BAG file.
+* [Download the BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
+* The gemeenten file is already in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
 * Run `import_bag.py`
 
 ## Python commands ##
