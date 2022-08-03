@@ -22,7 +22,7 @@ table. The SQLite database can be used directly, or may be a source to generate 
 databases.  
 
 ## Limitations ##
-Only active addresses are included. No history data. 
+Only active addresses are included. History data is left out. 
 Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). 
 Other addresses (Nevenadres) are ignored.
 
