@@ -1,11 +1,11 @@
-# BAG parser
+# Digital Dutch BAG parser
 
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
 user-friendly SQLite database by running a single Python script.
 
 ## Download BAG SQLite
-The latest generated BAG in SQLite format can be downloaded, in 7-Zip format, from our [releases section](https://github.com/digitaldutch/BAG_parser/releases).
+The latest BAG in SQLite format can be downloaded from our [releases section](https://github.com/digitaldutch/BAG_parser/releases).
 
 ## Description ##
 
