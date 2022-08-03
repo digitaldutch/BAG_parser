@@ -2,10 +2,9 @@
 
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-user-friendly SQLite database. 
-Download the BAG, run a single Python script.
+user-friendly SQLite database by running a single Python script.
 
-## Introduction ##
+## Description ##
 
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
 from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
@@ -19,13 +18,16 @@ This Python utility parses the BAG database and turns it into a clean, easy to r
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
 longitude coordinates. Year of construction, floor area and intended use of buildings are also provided. Several 
 tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) are merged into a general 'adressen'
-table. Only active addresses are included. 
+table. The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
+databases.  
 
-The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
-databases. 
+## Limitations ##
+Only active addresses are included. No history data. 
+Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). 
+Other addresses (Nevenadres) are ignored.
 
 Just a limited amount of data is parsed. If you need more data, buy it from [nlextract](https://nlextract.nl/), who
-have their own, much more [complete parser](https://github.com/nlextract/NLExtract).
+have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
 
 
 ## Requirements ##
@@ -33,7 +35,7 @@ have their own, much more [complete parser](https://github.com/nlextract/NLExtra
 
 ## Usage ##
 * [Download the BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
-* The gemeenten file is already in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
+* The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
 
@@ -46,8 +48,9 @@ Parses the BAG file and transforms it into a SQLite database. Takes a little mor
 Checks de SQLite database for info and errors. import_bag.py also performs these test after parsing.
 
 ### utils_sqlite_shrink.py ###
-Reduces the SQlite database size by removing tables that are no longer needed BAG tables due to the new 'adressen' table.
-The parser also does this if you set `delete_no_longer_needed_bag_tables` in [config.py](config.py) to True.
+Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) 
+that are no longer needed due to the new 'adressen' table.
+The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to True in [config.py](config.py).
 
 ## License ##
 This software is made available under the [MIT license](LICENSE).
