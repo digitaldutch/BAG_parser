@@ -39,6 +39,31 @@ have their own, much more complete [parser](https://github.com/nlextract/NLExtra
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
 
+* Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).
+Example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
+``` SQL
+SELECT
+    a.postcode,
+    a.huisnummer,
+    a.huisletter || a.toevoeging AS toevoeging,
+    o.naam AS straat,
+    g.naam AS gemeente,
+    w.naam AS woonplaats,
+    p.naam AS provincie,
+    a.bouwjaar,
+    a.latitude,
+    a.longitude,
+    a.oppervlakte,
+    a.gebruiksdoel
+FROM adressen a
+  LEFT JOIN openbare_ruimten o on a.openbare_ruimte_id = o.id
+  LEFT JOIN gemeenten g on a.gemeente_id = g.id
+  LEFT JOIN woonplaatsen w on a.woonplaats_id = w.id
+  LEFT JOIN provincies p on g.provincie_id = p.id
+WHERE postcode = '2514GL'
+  AND huisnummer=68;
+```
+
 ## Python commands ##
 
 ### import_bag.py ###
