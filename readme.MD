@@ -24,7 +24,7 @@ databases.
 ## Limitations ##
 Only active addresses are included. History data is left out. 
 Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). 
-Other addresses (Nevenadres) are ignored.
+Other addresses (nevenadres) are ignored.
 
 Just a limited amount of data is parsed. If you need more data, buy it from [nlextract](https://nlextract.nl/), who
 have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
@@ -34,34 +34,34 @@ have their own, much more complete [parser](https://github.com/nlextract/NLExtra
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* [Download the BAG](https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
+* [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
 * The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
 
-* Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).
+* Open the SQLite database with your favorite adminstration tool, in my case [DBeaver](https://dbeaver.io/).
 Example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ``` SQL
 SELECT
-    a.postcode,
-    a.huisnummer,
-    a.huisletter || a.toevoeging AS toevoeging,
-    o.naam AS straat,
-    g.naam AS gemeente,
-    w.naam AS woonplaats,
-    p.naam AS provincie,
-    a.bouwjaar,
-    a.latitude,
-    a.longitude,
-    a.oppervlakte,
-    a.gebruiksdoel
+  a.postcode,
+  a.huisnummer,
+  a.huisletter || a.toevoeging AS toevoeging,
+  o.naam                       AS straat,
+  g.naam                       AS gemeente,
+  w.naam                       AS woonplaats,
+  p.naam                       AS provincie,
+  a.bouwjaar,
+  a.latitude,
+  a.longitude,
+  a.oppervlakte                AS vloeroppervlakte,
+  a.gebruiksdoel
 FROM adressen a
-  LEFT JOIN openbare_ruimten o on a.openbare_ruimte_id = o.id
-  LEFT JOIN gemeenten g on a.gemeente_id = g.id
-  LEFT JOIN woonplaatsen w on a.woonplaats_id = w.id
-  LEFT JOIN provincies p on g.provincie_id = p.id
+  LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
+  LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
+  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
+  LEFT JOIN provincies p       ON g.provincie_id       = p.id
 WHERE postcode = '2514GL'
-  AND huisnummer=68;
+  AND huisnummer = 68;
 ```
 
 ## Python commands ##
