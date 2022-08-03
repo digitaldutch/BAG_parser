@@ -21,7 +21,7 @@ class BagParser:
         self.save_to_database = None
         self.start_time = None
         self.db_fields = {}
-        # sometimes the same tag is used for multiple fields and the parent tag has to be looked at too
+        # sometimes the same object tag is used for multiple fields and the parent tag has to be taken into account
         self.db_tag_parent_fields = {}
         self.today_string = datetime.today().strftime("%Y-%m-%d")
         self.data_init = {}
@@ -62,8 +62,8 @@ class BagParser:
                 ns_bagtypes + 'begindatumTijdvakGeldigheid': 'begindatum_geldigheid',
                 ns_bagtypes + 'einddatumTijdvakGeldigheid': 'einddatum_geldigheid',
             }
-            # Er zijn meerdere 'identificatie' tags voor woonplaats_id en gemeente_id.
-            # Hiervoor moeten ook naar de parent tags kijken.
+            # 'identificatie' is used for both woonplaats_id and gemeente_id.
+            # Therefore, identification is done by combining the tag with the parent tag
             self.db_tag_parent_fields = {
                 ns_gwr_product + 'gerelateerdeWoonplaats' + ns_gwr_product + 'identificatie': 'woonplaats_id',
                 ns_gwr_product + 'gerelateerdeGemeente' + ns_gwr_product + 'identificatie': 'gemeente_id',
@@ -153,8 +153,8 @@ class BagParser:
                 ns_objecten + 'status': 'status',
                 ns_objecten_ref + 'PandRef': 'pand_id',
             }
-            # Er zijn meerdere 'identificatie' tags voor woonplaats_id en gemeente_id.
-            # Hiervoor moeten ook naar de parent tags kijken.
+            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
+            # Therefore, identification is done by combining the tag with the parent tag
             self.db_tag_parent_fields = {
                 ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
             }

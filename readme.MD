@@ -46,8 +46,8 @@ Parses the BAG file and transforms it into a SQLite database. Takes a little mor
 Checks de SQLite database for info and errors. import_bag.py also performs these test after parsing.
 
 ### utils_sqlite_shrink.py ###
-Reduces the SQlite database size by removing tables that are no longer needed BAG tables due to the new addresses table.
-The parser also does this if you set `delete_no_longer_needed_bag_tables` in [config.py](config.py) to true.
+Reduces the SQlite database size by removing tables that are no longer needed BAG tables due to the new 'adressen' table.
+The parser also does this if you set `delete_no_longer_needed_bag_tables` in [config.py](config.py) to True.
 
 ## License ##
-This software is made available under the [GNU General Public License](LICENSE.md).
+This software is made available under the [MIT license](LICENSE).
