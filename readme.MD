@@ -24,15 +24,6 @@ tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are m
 table. The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
 databases.  
 
-## Limitations ##
-Only active addresses are included. History data is left out. 
-Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). 
-Other addresses (nevenadres) are ignored.
-
-Just a limited amount of data is parsed. If you need more data, buy it from [nlextract](https://nlextract.nl/), who
-have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
-
-
 ## Requirements ##
 * Python 3.8 works, but 3.10 is 20% quicker.
 
@@ -79,6 +70,15 @@ Checks de SQLite database for info and errors. `import_bag.py` also performs the
 Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
 The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to True in [config.py](config.py).
+
+## Limitations ##
+* Only active addresses are included. History data is left out.
+* No geometry data is parsed, only coordinates.
+* Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). Other addresses (nevenadres) are ignored.
+* Probably several more things that I forgot.
+
+Just a limited amount of data is parsed. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/), 
+who have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
 
 ## License ##
 This software is made available under the [MIT license](LICENSE).

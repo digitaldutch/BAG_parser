@@ -44,7 +44,6 @@ class DatabaseSqlite:
             gemeenten)
 
     def save_gemeente_woonplaats(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
         self.connection.execute(
             "UPDATE woonplaatsen SET gemeente_id=? WHERE id=?;",
             (data["gemeente_id"], data["woonplaats_id"]))
@@ -56,24 +55,26 @@ class DatabaseSqlite:
         self.commit()
 
     def save_openbare_ruimte(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
+        if config.use_short_street_names:
+            data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
+        else:
+            data["naam"] = data["lange_naam"]
         self.connection.execute(
-            "INSERT INTO openbare_ruimten (id, naam, type, woonplaats_id) VALUES(?, ?, ?, ?)",
-            (data["id"], data["naam"], data["type"], data["woonplaats_id"]))
+            "INSERT INTO openbare_ruimten (id, naam, lange_naam, verkorte_naam, type, woonplaats_id) "
+            "VALUES(?, ?, ?, ?, ?, ?)",
+            (data["id"], data["naam"], data["lange_naam"], data["verkorte_naam"], data["type"], data["woonplaats_id"]))
 
     def save_nummer(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, openbareruimte_id, status)
-               VALUES(?, ?, ?, ?, ?, ?, ?)
+            """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, openbareruimte_id, status)
+               VALUES(?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (data["id"], data["postcode"], data["huisnummer"], data["huisletter"], data["toevoeging"],
-             data["openbareruimte_id"], data["status"])
+             data["woonplaats_id"], data["openbareruimte_id"], data["status"])
         )
 
     def save_pand(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO panden (id, bouwjaar, status)
@@ -82,7 +83,6 @@ class DatabaseSqlite:
             (data["id"], data["bouwjaar"], data["status"]))
 
     def save_verblijfsobject(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, latitude, longitude, gebruiksdoel, 
@@ -122,11 +122,12 @@ class DatabaseSqlite:
             CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY, naam TEXT, gemeente_id INTEGER);
             
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, type TEXT, woonplaats_id INTEGER);
+            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, type TEXT, 
+              woonplaats_id INTEGER);
 
             DROP TABLE IF EXISTS nummers;
             CREATE TABLE nummers (id TEXT PRIMARY KEY, postcode TEXT, huisnummer INTEGER, huisletter TEXT,
-              toevoeging TEXT, openbareruimte_id TEXT, gerelateerde_woonplaats_id TEXT, status TEXT);
+              toevoeging TEXT, woonplaats_id TEXT, openbareruimte_id TEXT, status TEXT);
 
             DROP TABLE IF EXISTS panden;
             CREATE TABLE panden (id TEXT PRIMARY KEY, bouwjaar INTEGER, status TEXT);
@@ -196,24 +197,41 @@ class DatabaseSqlite:
             LEFT JOIN woonplaatsen w      ON w.id        = o.woonplaats_id
             LEFT JOIN verblijfsobjecten v ON v.nummer_id = n.id
             LEFT JOIN panden p            ON v.pand_id   = p.id;
-            
+        """)
+
+        self.adressen_import_ligplaatsen()
+        self.adressen_import_standplaatsen()
+        self.adressen_update_woonplaatsen_from_nummers()
+        self.create_indices_adressen()
+        self.connection.commit()
+
+    def adressen_import_ligplaatsen(self):
+        self.connection.executescript("""
             UPDATE adressen SET
               latitude = l.latitude,
               longitude = l.longitude,
               object_type = 'ligplaats'
             FROM (SELECT latitude, longitude, nummer_id from ligplaatsen) AS l
-            WHERE l.nummer_id = adressen.nummer_id;            
+            WHERE l.nummer_id = adressen.nummer_id;           
+        """)
 
+    def adressen_import_standplaatsen(self):
+        self.connection.executescript("""
             UPDATE adressen SET
               latitude = s.latitude,
               longitude = s.longitude,
               object_type = 'standplaats'
             FROM (SELECT latitude, longitude, nummer_id from standplaatsen) AS s
-            WHERE s.nummer_id = adressen.nummer_id;            
+            WHERE s.nummer_id = adressen.nummer_id;
         """)
 
-        self.create_indices_adressen()
-        self.connection.commit()
+    def adressen_update_woonplaatsen_from_nummers(self):
+        self.connection.executescript("""
+            UPDATE adressen SET
+              woonplaats_id = n.woonplaats_id
+            FROM (SELECT id, woonplaats_id from nummers WHERE woonplaats_id IS NOT '') AS n
+            WHERE n.id = adressen.nummer_id;
+        """)
 
     def delete_no_longer_needed_bag_tables(self):
         self.connection.executescript("""
@@ -224,13 +242,15 @@ class DatabaseSqlite:
           DROP TABLE IF EXISTS standplaatsen; 
         """)
 
-    def clean_adressen_tabel(self):
-        utils.print_log("clean sqlite database content")
+    def adressen_fix_bag_errors(self):
+        utils.print_log("Fix BAG errors")
         utils.print_log("verwijder ongeldige bouwjaren (> 2100)")
-        self.connection.execute("UPDATE adressen SET bouwjaar=null WHERE bouwjaar > 2100")
+        # The BAG contains some buildings with bouwjaar 9999
+        self.connection.execute("UPDATE adressen SET bouwjaar=null WHERE bouwjaar > 2100;")
 
         utils.print_log("verwijder ongeldige oppervlaktes (999.999)")
-        self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999")
+        # The BAG contains some residences with oppervlakte 999999
+        self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999;")
 
     def test_adressen_tabel(self):
         utils.print_log(f"start BAG database tests: {config.file_db_sqlite}")
@@ -261,6 +281,10 @@ class DatabaseSqlite:
 
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';""")
         utils.print_log("test: standplaatsen zonder locatie: " + str(aantal), aantal > 0)
+
+        # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
+        woonplaats_id = self.fetchone("""SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;""")
+        utils.print_log("test: Nummeraanduiding > WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). Niet Amsterdam (3594): " + str(woonplaats_id), woonplaats_id != 1050)
 
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen;""")
         utils.print_log(f"info: adressen: {aantal:n}")

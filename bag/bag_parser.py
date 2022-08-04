@@ -72,15 +72,18 @@ class BagParser:
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
             ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
             ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
+            ns_nen5825 = "{www.kadaster.nl/schemas/lvbag/imbag/nen5825/v20200601}"
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999OPR"
             self.total_xml = 343448  # required for progress indicator
+            self.data_init = {'verkorte_naam': ''}
             self.save_to_database = self.__save_openbareruimte
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
-                ns_objecten + 'naam': 'naam',
+                ns_objecten + 'naam': 'lange_naam',
+                ns_nen5825 + 'verkorteNaam': 'verkorte_naam',
                 ns_objecten + 'type': 'type',
                 ns_objecten + 'aanduidingRecordInactief': 'inactief',
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
@@ -98,7 +101,7 @@ class BagParser:
             self.file_bag_code = "9999NUM"
             self.total_xml = 12054045  # required for progress indicator
             # Initialization required as BAG leaves fields out of the data if it is empty
-            self.data_init = {'huisletter': '', 'toevoeging': '', 'postcode': ''}
+            self.data_init = {'huisletter': '', 'toevoeging': '', 'postcode': '', 'woonplaats_id': ''}
             self.save_to_database = self.__save_nummer
 
             self.db_fields = {
@@ -111,6 +114,7 @@ class BagParser:
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
                 ns_objecten_ref + 'OpenbareRuimteRef': 'openbareruimte_id',
+                ns_objecten_ref + 'WoonplaatsRef': 'woonplaats_id',
             }
             self.db_tag_parent_fields = {}
         elif self.tag_name == 'Pand':
