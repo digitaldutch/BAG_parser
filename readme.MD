@@ -20,7 +20,7 @@ It also does not include municipalities or provinces and provides coordinates us
 This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
 longitude coordinates. Year of construction, floor area and intended use of buildings are also provided. Several 
-tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) are merged into a general 'adressen'
+tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
 databases.  
 
@@ -37,11 +37,11 @@ have their own, much more complete [parser](https://github.com/nlextract/NLExtra
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as 'bag.zip' in the input folder.
-* The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as 'gemeenten.csv' in the input folder.
+* Download, or better, git clone this BAG parser.
+* [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the input folder.
+* The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
-
 * Open the SQLite database with your favorite adminstration tool, in my case [DBeaver](https://dbeaver.io/).
 Example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ``` SQL
@@ -70,13 +70,13 @@ WHERE postcode = '2514GL'
 ## Python commands ##
 
 ### import_bag.py ###
-Parses the BAG file and transforms it into a SQLite database. Takes a little more than an hour on my PC.
+Parses the BAG file and transforms it into a SQLite database. Takes about an hour.
 
 ### test_sqlite_db.py ###
-Checks de SQLite database for info and errors. import_bag.py also performs these test after parsing.
+Checks de SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
 ### utils_sqlite_shrink.py ###
-Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, verblijfsobjecten and ligplaatsen) 
+Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
 The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to True in [config.py](config.py).
 

@@ -93,10 +93,18 @@ class DatabaseSqlite:
         )
 
     def save_ligplaats(self, data):
-        # self.text_file.write(json.dumps(data) + '\n')
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status)
+               VALUES(?, ?, ?, ?, ?)
+            """,
+            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
+        )
+
+    def save_standplaats(self, data):
+        # Note: Use replace, because BAG does not always contain unique id's
+        self.connection.execute(
+            """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status)
                VALUES(?, ?, ?, ?, ?)
             """,
             (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
@@ -118,7 +126,7 @@ class DatabaseSqlite:
 
             DROP TABLE IF EXISTS nummers;
             CREATE TABLE nummers (id TEXT PRIMARY KEY, postcode TEXT, huisnummer INTEGER, huisletter TEXT,
-              toevoeging TEXT, openbareruimte_id TEXT, status TEXT);
+              toevoeging TEXT, openbareruimte_id TEXT, gerelateerde_woonplaats_id TEXT, status TEXT);
 
             DROP TABLE IF EXISTS panden;
             CREATE TABLE panden (id TEXT PRIMARY KEY, bouwjaar INTEGER, status TEXT);
@@ -130,6 +138,10 @@ class DatabaseSqlite:
             DROP TABLE IF EXISTS ligplaatsen;
             CREATE TABLE ligplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
               status TEXT);              
+
+            DROP TABLE IF EXISTS standplaatsen;
+            CREATE TABLE standplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
+              status TEXT);              
         """)
         self.connection.commit()
 
@@ -138,6 +150,8 @@ class DatabaseSqlite:
             CREATE INDEX IF NOT EXISTS idx_verblijfsobjecten_nummer_id ON verblijfsobjecten (nummer_id);
             
             CREATE INDEX IF NOT EXISTS idx_ligplaatsen_nummer_id ON ligplaatsen (nummer_id);
+
+            CREATE INDEX IF NOT EXISTS idx_standplaatsen_nummer_id ON standplaatsen (nummer_id);
         """)
         self.connection.commit()
 
@@ -153,12 +167,12 @@ class DatabaseSqlite:
             DROP TABLE IF EXISTS adressen;
             
             CREATE TABLE adressen (nummer_id TEXT PRIMARY KEY, pand_id TEXT, verblijfsobject_id TEXT, 
-                gemeente_id INTEGER, woonplaats_id INTEGER, openbare_ruimte_id INTEGER, gebruiksdoel TEXT,
-                postcode TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, oppervlakte FLOAT,
-                latitude FLOAT, longitude FLOAT, bouwjaar INTEGER);
+                gemeente_id INTEGER, woonplaats_id INTEGER, openbare_ruimte_id INTEGER, object_type TEXT, 
+                gebruiksdoel TEXT, postcode TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, 
+                oppervlakte FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER);
 
             INSERT INTO adressen (nummer_id, pand_id, verblijfsobject_id, gemeente_id, woonplaats_id, 
-                openbare_ruimte_id, gebruiksdoel, postcode, huisnummer, huisletter, toevoeging, 
+                openbare_ruimte_id, object_type, gebruiksdoel, postcode, huisnummer, huisletter, toevoeging, 
                 oppervlakte, longitude, latitude, bouwjaar)
             SELECT
               n.id AS nummer_id,
@@ -167,6 +181,7 @@ class DatabaseSqlite:
               w.gemeente_id,
               o.woonplaats_id,
               o.id,
+              'verblijfsobject',
               v.gebruiksdoel,
               n.postcode,
               n.huisnummer,
@@ -180,15 +195,21 @@ class DatabaseSqlite:
             LEFT JOIN openbare_ruimten o  ON o.id        = n.openbareruimte_id
             LEFT JOIN woonplaatsen w      ON w.id        = o.woonplaats_id
             LEFT JOIN verblijfsobjecten v ON v.nummer_id = n.id
-            LEFT JOIN ligplaatsen l       ON l.nummer_id = n.id
             LEFT JOIN panden p            ON v.pand_id   = p.id;
             
             UPDATE adressen SET
               latitude = l.latitude,
               longitude = l.longitude,
-              gebruiksdoel = 'ligplaats'
+              object_type = 'ligplaats'
             FROM (SELECT latitude, longitude, nummer_id from ligplaatsen) AS l
             WHERE l.nummer_id = adressen.nummer_id;            
+
+            UPDATE adressen SET
+              latitude = s.latitude,
+              longitude = s.longitude,
+              object_type = 'standplaats'
+            FROM (SELECT latitude, longitude, nummer_id from standplaatsen) AS s
+            WHERE s.nummer_id = adressen.nummer_id;            
         """)
 
         self.create_indices_adressen()
@@ -196,10 +217,11 @@ class DatabaseSqlite:
 
     def delete_no_longer_needed_bag_tables(self):
         self.connection.executescript("""
-          DROP TABLE IF EXISTS Nummers; 
-          DROP TABLE IF EXISTS Panden; 
-          DROP TABLE IF EXISTS Verblijfsobjecten; 
-          DROP TABLE IF EXISTS Ligplaatsen; 
+          DROP TABLE IF EXISTS nummers; 
+          DROP TABLE IF EXISTS panden; 
+          DROP TABLE IF EXISTS verblijfsobjecten; 
+          DROP TABLE IF EXISTS ligplaatsen; 
+          DROP TABLE IF EXISTS standplaatsen; 
         """)
 
     def clean_adressen_tabel(self):
@@ -223,7 +245,7 @@ class DatabaseSqlite:
             WHERE openbare_ruimte_id IS NULL
                 OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)
             """)
-        utils.print_log("test: adressen zonder openbare ruimte: " + str(aantal))
+        utils.print_log("test: adressen zonder openbare ruimte: " + str(aantal), aantal > 0)
 
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE woonplaats_id IS NULL;""")
         utils.print_log("test: adressen zonder woonplaats: " + str(aantal), aantal > 0)
@@ -237,6 +259,9 @@ class DatabaseSqlite:
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';""")
         utils.print_log("test: ligplaatsen zonder locatie: " + str(aantal), aantal > 0)
 
+        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';""")
+        utils.print_log("test: standplaatsen zonder locatie: " + str(aantal), aantal > 0)
+
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen;""")
         utils.print_log(f"info: adressen: {aantal:n}")
 
@@ -245,6 +270,9 @@ class DatabaseSqlite:
 
         aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='ligplaats';""")
         utils.print_log(f"info: ligplaatsen: {aantal:n}")
+
+        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='standplaats';""")
+        utils.print_log(f"info: standplaatsen: {aantal:n}")
 
         aantal = self.fetchone("""SELECT COUNT(*) FROM openbare_ruimten;""")
         utils.print_log(f"info: openbare ruimten: {aantal:n}")

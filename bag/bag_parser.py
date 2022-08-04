@@ -177,9 +177,37 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
-                ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
             }
-            self.db_tag_parent_fields = {}
+            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
+            # Therefore, identification is done by combining the tag with the parent tag
+            self.db_tag_parent_fields = {
+                ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
+            }
+        elif self.tag_name == 'Standplaats':
+            ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
+            ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
+            ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
+            ns_gml = "{http://www.opengis.net/gml/3.2}"
+
+            self.object_tag_name = ns_objecten + tag_name
+            self.file_bag_code = "9999STA"
+            self.total_xml = 49543  # required for progress indicator
+            self.data_init = {'pos': '', 'latitude': '', 'longitude': ''}
+            self.save_to_database = self.__save_standplaats
+
+            self.db_fields = {
+                ns_objecten + 'identificatie': 'id',
+                ns_gml + 'posList': 'pos',
+                ns_objecten + 'aanduidingRecordInactief': 'inactief',
+                ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
+                ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
+                ns_objecten + 'status': 'status',
+            }
+            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
+            # Therefore, identification is done by combining the tag with the parent tag
+            self.db_tag_parent_fields = {
+                ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
+            }
         else:
             raise Exception("Tag name not found")
 
@@ -311,6 +339,15 @@ class BagParser:
             self.count_db += 1
             self.__update_status()
             self.database.save_ligplaats(data)
+
+    def __save_standplaats(self, data):
+        if (self.__bag_einddatum_valid(data) and
+                self.__bag_begindatum_valid(data)):
+            if data['pos']:
+                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['pos'])
+            self.count_db += 1
+            self.__update_status()
+            self.database.save_standplaats(data)
 
     def __bag_begindatum_valid(self, data):
         datum = data.get('begindatum_geldigheid')
