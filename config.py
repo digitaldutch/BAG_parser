@@ -1,7 +1,7 @@
 import locale
 
-version = 30
-version_date = '4 augustus 2022'
+version = 31
+version_date = '5 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -26,3 +26,7 @@ delete_no_longer_needed_bag_tables = True
 # default if available.
 # https://imbag.github.io/praktijkhandleiding/artikelen/hoe-wordt-de-verkorte-schrijfwijze-van-een-openbare-ruimte-bepaald
 use_short_street_names = False
+
+# Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
+# They will be automatically deleted if the total number of invalid addresses is less than the number below.
+delete_addresses_without_public_spaces_if_less_than = 10

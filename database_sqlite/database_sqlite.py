@@ -242,30 +242,30 @@ class DatabaseSqlite:
         """)
 
     def adressen_fix_bag_errors(self):
-        utils.print_log("Test BAG for errors")
+        utils.print_log("Start Fix BAG:")
 
         # The BAG contains some buildings with bouwjaar 9999
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2100;")
-        utils.print_log("Fix BAG: test for adressen met bouwjaar > 2100: " + str(aantal))
+        utils.print_log("Fix BAG: test adressen met bouwjaar > 2100: " + str(aantal))
 
         if aantal > 0:
-            utils.print_log("Fix BAG: verwijder ongeldige bouwjaren (> 2100)")
+            utils.print_log(f"Fix BAG: verwijder {aantal:n} ongeldige bouwjaren (> 2100)")
             self.connection.execute("UPDATE adressen SET bouwjaar=null WHERE bouwjaar > 2100;")
 
         # The BAG contains some residences with oppervlakte 999999
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE oppervlakte = 999999;")
-        utils.print_log("Fix BAG: test for adressen met oppervlakte = 999999: " + str(aantal))
+        utils.print_log("Fix BAG: test adressen met oppervlakte = 999999: " + str(aantal))
         if aantal > 0:
-            utils.print_log("Fix BAG: verwijder ongeldige oppervlaktes (999999)")
+            utils.print_log(f"Fix BAG: verwijder {aantal:n} ongeldige oppervlaktes (999999)")
             self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999;")
 
-        # The BAG contains some addresses without valid pubic space
+        # The BAG contains some addresses without valid public space
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
                                " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
         utils.print_log("Fix BAG: test for adressen zonder openbare ruimte: " + str(aantal))
-        # If less than 10, just delete them. Generally they are no longer existing addresses
-        if (aantal > 0) and (aantal < 10):
-            utils.print_log("Fix BAG: verwijder adressen zonder openbare ruimte")
+        # Delete them if not too many
+        if (aantal > 0) and (aantal < config.delete_addresses_without_public_spaces_if_less_than):
+            utils.print_log(f"Fix BAG: verwijder {aantal:n} adressen zonder openbare ruimte")
             self.connection.execute("DELETE FROM adressen WHERE openbare_ruimte_id IS NULL "
                                     "OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)")
 
