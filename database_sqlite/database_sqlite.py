@@ -270,7 +270,7 @@ class DatabaseSqlite:
         self.connection.commit()
 
     def test_adressen_tabel(self):
-        utils.print_log(f"start BAG database tests: {config.file_db_sqlite}")
+        utils.print_log(f"start: tests on BAG SQLite database: {config.file_db_sqlite}")
         aantal = self.fetchone("""
             SELECT COUNT(*) FROM woonplaatsen 
             WHERE gemeente_id IS NULL OR gemeente_id NOT IN (SELECT ID FROM gemeenten);
@@ -303,8 +303,8 @@ class DatabaseSqlite:
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;")
-        utils.print_log("test: Nummeraanduiding > WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). " 
-                        "Niet Amsterdam (3594): " + str(woonplaats_id), woonplaats_id != 1050)
+        utils.print_log("test: nummeraanduiding (WoonplaatsRef tag). 1181BN-1 ligt in Amstelveen (1050). " 
+                        f"Niet Amsterdam (3594): {woonplaats_id:n}", woonplaats_id != 1050)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
         utils.print_log(f"info: adressen: {aantal:n}")

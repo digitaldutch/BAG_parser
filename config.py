@@ -1,6 +1,6 @@
 import locale
 
-version = 32
+version = 33
 version_date = '5 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -19,7 +19,7 @@ file_log = 'output/bag_importer.log'
 
 # The parser creates an 'adressen' table. After that some BAG tables are no longer needed and will be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
-# You can also delete these afterwards using the utils_sqlite_shrink.py script.
+# You can also delete these tables afterwards using the utils_sqlite_shrink.py script.
 delete_no_longer_needed_bag_tables = True
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
