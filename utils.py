@@ -25,6 +25,7 @@ logger = Logger()
 
 def print_log(message, error=False):
     now = datetime.now()
+    if error: message += ' | test failed'
     text = now.strftime("%Y-%m-%d %H:%M:%S.%f") + ' ' + message
     text_console = text
     if error:

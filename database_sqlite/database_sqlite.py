@@ -4,7 +4,6 @@ import utils
 
 
 class DatabaseSqlite:
-
     connection = None
     cursor = None
 
@@ -243,14 +242,34 @@ class DatabaseSqlite:
         """)
 
     def adressen_fix_bag_errors(self):
-        utils.print_log("Fix BAG errors")
-        utils.print_log("verwijder ongeldige bouwjaren (> 2100)")
-        # The BAG contains some buildings with bouwjaar 9999
-        self.connection.execute("UPDATE adressen SET bouwjaar=null WHERE bouwjaar > 2100;")
+        utils.print_log("Test BAG for errors")
 
-        utils.print_log("verwijder ongeldige oppervlaktes (999.999)")
+        # The BAG contains some buildings with bouwjaar 9999
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2100;")
+        utils.print_log("Fix BAG: test for adressen met bouwjaar > 2100: " + str(aantal))
+
+        if aantal > 0:
+            utils.print_log("Fix BAG: verwijder ongeldige bouwjaren (> 2100)")
+            self.connection.execute("UPDATE adressen SET bouwjaar=null WHERE bouwjaar > 2100;")
+
         # The BAG contains some residences with oppervlakte 999999
-        self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999;")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE oppervlakte = 999999;")
+        utils.print_log("Fix BAG: test for adressen met oppervlakte = 999999: " + str(aantal))
+        if aantal > 0:
+            utils.print_log("Fix BAG: verwijder ongeldige oppervlaktes (999999)")
+            self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999;")
+
+        # The BAG contains some addresses without valid pubic space
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
+                               " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
+        utils.print_log("Fix BAG: test for adressen zonder openbare ruimte: " + str(aantal))
+        # If less than 10, just delete them. Generally they are no longer existing addresses
+        if (aantal > 0) and (aantal < 10):
+            utils.print_log("Fix BAG: verwijder adressen zonder openbare ruimte")
+            self.connection.execute("DELETE FROM adressen WHERE openbare_ruimte_id IS NULL "
+                                    "OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)")
+
+        self.connection.commit()
 
     def test_adressen_tabel(self):
         utils.print_log(f"start BAG database tests: {config.file_db_sqlite}")
@@ -267,45 +286,48 @@ class DatabaseSqlite:
             """)
         utils.print_log("test: adressen zonder openbare ruimte: " + str(aantal), aantal > 0)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE woonplaats_id IS NULL;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE woonplaats_id IS NULL;")
         utils.print_log("test: adressen zonder woonplaats: " + str(aantal), aantal > 0)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;")
         utils.print_log("test: adressen zonder gemeente: " + str(aantal), aantal > 0)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
         utils.print_log("test: panden zonder locatie: " + str(aantal), aantal > 0)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen "
+                               "WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';")
         utils.print_log("test: ligplaatsen zonder locatie: " + str(aantal), aantal > 0)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';""")
+        aantal = self.fetchone(
+            "SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
         utils.print_log("test: standplaatsen zonder locatie: " + str(aantal), aantal > 0)
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
-        woonplaats_id = self.fetchone("""SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;""")
-        utils.print_log("test: Nummeraanduiding > WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). Niet Amsterdam (3594): " + str(woonplaats_id), woonplaats_id != 1050)
+        woonplaats_id = self.fetchone("SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;")
+        utils.print_log("test: Nummeraanduiding > WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). " 
+                        "Niet Amsterdam (3594): " + str(woonplaats_id), woonplaats_id != 1050)
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
         utils.print_log(f"info: adressen: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT null;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT null;")
         utils.print_log(f"info: panden: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='ligplaats';""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='ligplaats';")
         utils.print_log(f"info: ligplaatsen: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='standplaats';""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gebruiksdoel='standplaats';")
         utils.print_log(f"info: standplaatsen: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM openbare_ruimten;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM openbare_ruimten;")
         utils.print_log(f"info: openbare ruimten: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM woonplaatsen;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM woonplaatsen;")
         utils.print_log(f"info: woonplaatsen: {aantal:n}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM gemeenten;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM gemeenten;")
         utils.print_log(f"info: gemeenten: {aantal}")
 
-        aantal = self.fetchone("""SELECT COUNT(*) FROM provincies;""")
+        aantal = self.fetchone("SELECT COUNT(*) FROM provincies;")
         utils.print_log(f"info: provincies: {aantal}")
