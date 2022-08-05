@@ -28,7 +28,8 @@ databases.
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* Download, or better, git clone this BAG parser.
+* Download, or better, git clone this BAG parser.  
+`git clone https://github.com/digitaldutch/BAG_parser`
 * [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the input folder.
 * The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Run `import_bag.py`

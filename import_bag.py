@@ -6,12 +6,12 @@ from database_sqlite import DatabaseSqlite
 from bag.bag_parser import BagParser
 from bag.gemeente_parser import GemeentenParser
 
-utils.print_log('BAG import into sqlite: start')
+utils.print_log('start: BAG XML to sqlite database: ' + config.file_bag)
 
 if not os.path.exists(config.file_bag): sys.exit('BAG file not found. See readme.MD')
 
 # unzip BAG file to temp folder
-utils.print_log('unzip BAG to temp folder: ' + config.file_bag)
+utils.print_log('unzip BAG file to temp folder: ' + config.file_bag)
 if not os.path.exists('temp'): os.makedirs('temp')
 utils.empty_folder('temp')
 with zipfile.ZipFile(config.file_bag, 'r') as file:
@@ -57,4 +57,5 @@ utils.empty_folder('temp')
 
 db_sqlite.close()
 
-utils.print_log('BAG import into sqlite: ready')
+utils.print_log('ready: BAG XML to sqlite database: ' + config.file_db_sqlite)
+

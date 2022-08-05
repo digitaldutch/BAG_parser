@@ -1,6 +1,6 @@
 import locale
 
-version = 31
+version = 32
 version_date = '5 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -29,4 +29,5 @@ use_short_street_names = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.
+# Set to 0 if you want warning messages and manually check them yourself.
 delete_addresses_without_public_spaces_if_less_than = 10
