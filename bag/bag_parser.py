@@ -215,24 +215,23 @@ class BagParser:
         else:
             raise Exception("Tag name not found")
 
+        utils.print_log(f'start: parse XML {self.tag_name}')
+
         self.__unzip_xml()
 
         xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
 
-        utils.print_log('parse XML ' + self.tag_name + ' start')
         self.start_time = time.perf_counter()
 
-        # self.database.start_transaction()
         for file_xml in xml_files:
             self.__parse_file(file_xml)
         self.database.commit()
-        # self.database.commit_transaction()
 
         self.__update_status(True)
-        utils.print_log('parse XML ' + self.tag_name + " ready {:.2f}s".format(self.elapsed_time)
-                        + ' | XML/DB: ' + str(self.count_xml) + "/" + str(self.count_db))
 
-        utils.print_log('empty temp xml folder')
+        utils.print_log(f'ready: parse XML {self.tag_name} | {self.elapsed_time:.2f}s '
+                        f'| XML/DB: {str(self.count_xml)}/{str(self.count_db)}')
+
         utils.empty_folder(self.folder_temp_xml)
 
     def __unzip_xml(self):
