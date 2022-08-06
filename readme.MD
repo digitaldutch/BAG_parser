@@ -2,7 +2,7 @@
 
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-user-friendly SQLite database by running a single Python script.
+user-friendly SQLite database by running a single Python script. No need to install dependencies or a database server.
 
 ## Download BAG SQLite
 The latest BAG in SQLite format can be downloaded from our [releases section](https://github.com/digitaldutch/BAG_parser/releases).
@@ -19,22 +19,24 @@ It also does not include municipalities or provinces and provides coordinates us
 
 This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
-longitude coordinates. Year of construction, floor area and intended use of buildings are also provided. Several 
-tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
-table. The SQLite database can be used directly, or may be a source to generate a *.csv file or update your own addresses 
+longitude coordinates. A few BAG bugs are fixed. Year of construction, floor area and intended use of buildings are also provided. 
+Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
+table. The SQLite database can be used directly, or as a source to generate a *.csv file or update your own addresses 
 databases.  
 
 ## Requirements ##
 * Python 3.8 works, but 3.10 is 20% quicker.
 
 ## Usage ##
-* Download, or better, git clone this BAG parser.  
-`git clone https://github.com/digitaldutch/BAG_parser`
-* [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the input folder.
-* The gemeenten file is already included in the input folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
+* Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
+`git clone https://github.com/digitaldutch/BAG_parser`  
+Update parser:  
+`git pull https://github.com/digitaldutch/BAG_parser`
+* [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the `input` folder.
+* The `gemeenten.csv` file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
-* Open the SQLite database with your favorite adminstration tool, in my case [DBeaver](https://dbeaver.io/).
+* Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).
 Example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ``` SQL
 SELECT
