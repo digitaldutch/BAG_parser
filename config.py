@@ -20,7 +20,7 @@ file_log = 'output/bag_importer.log'
 # The parser creates an 'adressen' table. After that some BAG tables are no longer needed and will be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
 # You can also delete these tables afterwards using the utils_sqlite_shrink.py script.
-delete_no_longer_needed_bag_tables = True
+delete_no_longer_needed_bag_tables = False
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.
