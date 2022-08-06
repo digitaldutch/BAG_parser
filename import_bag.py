@@ -57,5 +57,5 @@ utils.empty_folder('temp')
 
 db_sqlite.close()
 
-utils.print_log(f'ready: BAG XML to sqlite database {config.file_db_sqlite}')
+utils.print_log(f"ready: BAG XML to sqlite database '{config.file_db_sqlite}'")
 
