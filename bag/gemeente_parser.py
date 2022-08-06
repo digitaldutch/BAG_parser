@@ -19,7 +19,7 @@ class GemeentenParser:
 
         gemeenten = []
         provincies = []
-        with open(config.file_gemeenten) as csv_file:
+        with open(config.file_gemeenten, newline='', encoding='utf-8') as csv_file:
             reader = csv.reader(csv_file, delimiter=',')
             line_count = 0
             for row in reader:

@@ -8,7 +8,7 @@ class Logger:
         file_name = config.file_log
         path = os.path.dirname(file_name)
         if not os.path.exists(path): os.makedirs(path)
-        self.file = open(file_name, "w")
+        self.file = open(file_name, "w", encoding='utf-8')
 
     def log(self, text):
         self.file.write(text + '\n')

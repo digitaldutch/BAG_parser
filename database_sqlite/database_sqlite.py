@@ -1,4 +1,5 @@
 import sqlite3
+import csv
 import config
 import utils
 
@@ -66,8 +67,8 @@ class DatabaseSqlite:
     def save_nummer(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, openbareruimte_id, status)
-               VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+            """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, openbareruimte_id,
+             status) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (data["id"], data["postcode"], data["huisnummer"], data["huisletter"], data["toevoeging"],
              data["woonplaats_id"], data["openbareruimte_id"], data["status"])
@@ -121,8 +122,8 @@ class DatabaseSqlite:
             CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY, naam TEXT, gemeente_id INTEGER);
             
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, type TEXT, 
-              woonplaats_id INTEGER);
+            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
+              type TEXT, woonplaats_id INTEGER);
 
             DROP TABLE IF EXISTS nummers;
             CREATE TABLE nummers (id TEXT PRIMARY KEY, postcode TEXT, huisnummer INTEGER, huisletter TEXT,
@@ -269,7 +270,16 @@ class DatabaseSqlite:
 
         self.connection.commit()
 
+    def check_valid_database(self):
+        # Check if database contains adressen tabel
+        aantal = self.fetchone("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'adressen';")
+        if aantal != 1:
+            raise Exception(f"SQLite database '{config.file_db_sqlite}' bevat geen adressen tabel. "
+                            "Importeer BAG eerst.")
+
     def test_adressen_tabel(self):
+        self.check_valid_database()
+
         utils.print_log(f"start: tests on BAG SQLite database: {config.file_db_sqlite}")
         aantal = self.fetchone("""
             SELECT COUNT(*) FROM woonplaatsen 
@@ -303,7 +313,7 @@ class DatabaseSqlite:
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;")
-        utils.print_log("test: nummeraanduiding (WoonplaatsRef tag). 1181BN-1 ligt in Amstelveen (1050). " 
+        utils.print_log("test: nummeraanduiding (WoonplaatsRef tag). 1181BN-1 ligt in Amstelveen (1050). "
                         f"Niet Amsterdam (3594): {woonplaats_id:n}", woonplaats_id != 1050)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
@@ -329,3 +339,19 @@ class DatabaseSqlite:
 
         aantal = self.fetchone("SELECT COUNT(*) FROM provincies;")
         utils.print_log(f"info: provincies: {aantal}")
+
+    def export_to_csv(self):
+        self.check_valid_database()
+
+        file = open(config.file_csv_adressen, 'w', newline='', encoding='utf-8')
+        writer = csv.writer(file)
+
+        sql_from = "SELECT id, naam, provincie_id FROM gemeenten"
+        count = 0
+        self.cursor.execute(sql_from)
+        for row in self.cursor:
+            count += 1
+            writer.writerow(row)
+
+
+

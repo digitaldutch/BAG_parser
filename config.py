@@ -1,6 +1,6 @@
 import locale
 
-version = 35
+version = 37
 version_date = '6 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -16,6 +16,9 @@ file_db_sqlite = 'output/bag.sqlite'
 
 # log file with progress, warnings and error messages. This info is also written to the console
 file_log = 'output/bag_importer.log'
+
+# csv file for adressen export
+file_csv_adressen = 'output/adressen.csv'
 
 # The parser creates an 'adressen' table. After that some BAG tables are no longer needed and will be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
