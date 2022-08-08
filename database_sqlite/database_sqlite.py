@@ -300,6 +300,9 @@ class DatabaseSqlite:
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;")
         utils.print_log("test: adressen zonder gemeente: " + str(aantal), aantal > 0)
 
+        naam = self.fetchone("SELECT naam FROM gemeenten WHERE id=1900")
+        utils.print_log("test: Gemeentenamen moeten in UTF-8 zijn: " + naam, naam != 'Súdwest-Fryslân')
+
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
         utils.print_log("test: panden zonder locatie: " + str(aantal), aantal > 0)
 
