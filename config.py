@@ -1,7 +1,7 @@
 import locale
 
-version = 38
-version_date = '8 augustus 2022'
+version = 39
+version_date = '16 augustus 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 

@@ -23,6 +23,10 @@ class DatabaseSqlite:
         self.cursor.execute(sql)
         return self.cursor.fetchone()[0]
 
+    def fetchall(self, sql):
+        self.cursor.execute(sql)
+        return self.cursor.fetchall()
+
     def start_transaction(self):
         self.connection.execute("BEGIN TRANSACTION")
 
@@ -225,6 +229,7 @@ class DatabaseSqlite:
             WHERE s.nummer_id = adressen.nummer_id;
         """)
 
+    # woonplaats_id in nummers overruled woonplaats_id van de openbare ruimte.
     def adressen_update_woonplaatsen_from_nummers(self):
         self.connection.executescript("""
             UPDATE adressen SET
@@ -245,7 +250,7 @@ class DatabaseSqlite:
     def adressen_fix_bag_errors(self):
         # The BAG contains some buildings with bouwjaar 9999
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2100;")
-        utils.print_log("fix BAG: test adressen met bouwjaar > 2100: " + str(aantal))
+        utils.print_log("fix BAG: test adressen met ongeldig bouwjaar > 2100: " + str(aantal))
 
         if aantal > 0:
             utils.print_log(f"fix BAG: verwijder {aantal:n} ongeldige bouwjaren (> 2100)")
@@ -253,7 +258,7 @@ class DatabaseSqlite:
 
         # The BAG contains some residences with oppervlakte 999999
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE oppervlakte = 999999;")
-        utils.print_log("fix BAG: test adressen met oppervlakte = 999999: " + str(aantal))
+        utils.print_log("fix BAG: test adressen met ongeldige oppervlakte = 999999: " + str(aantal))
         if aantal > 0:
             utils.print_log(f"fix BAG: verwijder {aantal:n} ongeldige oppervlaktes (999999)")
             self.connection.execute("UPDATE adressen SET oppervlakte=null WHERE oppervlakte = 999999;")
@@ -277,15 +282,36 @@ class DatabaseSqlite:
             raise Exception(f"SQLite database '{config.file_db_sqlite}' bevat geen adressen tabel. "
                             "Importeer BAG eerst.")
 
-    def test_adressen_tabel(self):
+    def test_bag(self):
         self.check_valid_database()
 
-        utils.print_log(f"start: tests on BAG SQLite database: {config.file_db_sqlite}")
+        utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_sqlite}'")
+
+        # Soms zitten er nog oude gemeenten die niet meer bestaan in de gemeenten.csv filee
+        aantal = self.fetchone("""
+            SELECT COUNT(*) FROM gemeenten
+            WHERE id NOT in (SELECT DISTINCT gemeente_id FROM adressen);
+            """)
+        utils.print_log("test: gemeenten zonder adressen: " + str(aantal), aantal > 0)
+
+        if aantal > 0:
+            gemeenten = self.fetchall("""
+                SELECT id, naam FROM gemeenten 
+                WHERE id NOT in (SELECT DISTINCT gemeente_id FROM adressen);
+                """)
+
+            s = ''
+            for gemeente in gemeenten:
+                if s:
+                    s += ', '
+                s += str(gemeente[0]) + ' ' + gemeente[1]
+            utils.print_log("test: gemeenten zonder adressen: " + s, aantal > 0)
+
         aantal = self.fetchone("""
             SELECT COUNT(*) FROM woonplaatsen 
             WHERE gemeente_id IS NULL OR gemeente_id NOT IN (SELECT ID FROM gemeenten);
             """)
-        utils.print_log("test: woonplaatsen zonder gemeente: " + str(aantal))
+        utils.print_log("test: woonplaatsen zonder gemeente: " + str(aantal), aantal > 0)
 
         aantal = self.fetchone("""
             SELECT COUNT(*) FROM adressen 
@@ -300,6 +326,7 @@ class DatabaseSqlite:
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;")
         utils.print_log("test: adressen zonder gemeente: " + str(aantal), aantal > 0)
 
+        # Het is makkelijk om per ongeluk een gemeenten.csv te genereren die niet in UTF-8 is. Testen dus.
         naam = self.fetchone("SELECT naam FROM gemeenten WHERE id=1900")
         utils.print_log("test: Gemeentenamen moeten in UTF-8 zijn: " + naam, naam != 'Súdwest-Fryslân')
 
@@ -316,7 +343,7 @@ class DatabaseSqlite:
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id from adressen where postcode='1181BN' and huisnummer=1;")
-        utils.print_log("test: nummeraanduiding (WoonplaatsRef tag). 1181BN-1 ligt in Amstelveen (1050). "
+        utils.print_log("test: nummeraanduiding WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). "
                         f"Niet Amsterdam (3594): {woonplaats_id:n}", woonplaats_id != 1050)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
@@ -355,6 +382,3 @@ class DatabaseSqlite:
         for row in self.cursor:
             count += 1
             writer.writerow(row)
-
-
-

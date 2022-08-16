@@ -43,7 +43,7 @@ db_sqlite.create_indices_bag()
 utils.print_log('create adressen tabel')
 db_sqlite.create_adressen_from_bag()
 db_sqlite.adressen_fix_bag_errors()
-db_sqlite.test_adressen_tabel()
+db_sqlite.test_bag()
 
 if config.delete_no_longer_needed_bag_tables:
     utils.print_log('delete no longer needed BAG tables')
