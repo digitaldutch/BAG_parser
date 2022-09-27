@@ -1,6 +1,6 @@
 import locale
 
-version = 41
+version = 42
 version_date = '27 september 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -14,7 +14,7 @@ file_gemeenten = 'input/gemeenten.csv'
 # output SQLite database with parsed BAG
 file_db_sqlite = 'output/bag.sqlite'
 
-# log file with progress, warnings and error messages. This info is also written to the console
+# log file with progress, warnings and error messages. This info is also written to the console.
 file_log = 'output/bag_importer.log'
 
 # The parser creates an 'adressen' table. After that some BAG tables are no longer needed and will be deleted:
@@ -29,5 +29,5 @@ use_short_street_names = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.
-# Set to 0 if you want warning messages and manually check them yourself.
+# Set to 0 if you want warning messages and manually check and correct them yourself.
 delete_addresses_without_public_spaces_if_less_than = 10
