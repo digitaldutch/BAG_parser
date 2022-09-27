@@ -25,7 +25,7 @@ table. The SQLite database can be used directly, or as a source to generate a *.
 databases.  
 
 ## Requirements ##
-* Python 3.8 works, but 3.10 is 20% quicker.
+* Python 3.8 probably works, but 3.10 is 20% quicker.
 
 ## Usage ##
 * Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
@@ -63,13 +63,20 @@ WHERE postcode = '2514GL'
 
 ## Python commands ##
 
-### import_bag.py ###
-Parses the BAG file and transforms it into a SQLite database. Takes about an hour.
+### [import_bag.py](import_bag.py) ###
+Parses the original BAG file and transforms it into a SQLite database. Takes about an hour.
 
-### test_sqlite_db.py ###
+### [export_to_csv_postcodes.py](export_to_csv_postcodes.py) ###
+Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 30 seconds.
+
+### [export_to_csv.py](export_to_csv.py) ###
+Exports the addresses in SQLite database to a *.csv file including additional information, like year of construction, 
+latitude, longitude, floor area and intended use of buildings. Takes about 75 seconds.
+
+### [test_sqlite_db.py](test_sqlite_db.py) ###
 Checks de SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
-### utils_sqlite_shrink.py ###
+### [utils_sqlite_shrink.py](utils_sqlite_shrink.py) ###
 Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
 The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to True in [config.py](config.py).

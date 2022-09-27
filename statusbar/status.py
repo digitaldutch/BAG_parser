@@ -25,18 +25,18 @@ class StatusUpdater:
     def __update_bar(self, count, final):
         self.last_update_time = time.perf_counter()
         self.elapsed_time = self.last_update_time - self.start_time
-        calls_per_second = round(self.count / self.elapsed_time)
+        count_per_second = round(self.count / self.elapsed_time)
 
-        text = f'{self.elapsed_time:.1f}s | {self.count:n} (per second: {calls_per_second:n})'
+        text = f'{self.elapsed_time:.1f}s | {self.count:n}/{self.total_count:n} (per second: {count_per_second:n})'
 
         total_count = self.total_count if (self.total_count > 0) else count
         utils.print_progress_bar(count, total_count, text, final)
 
     def update(self, count):
         self.count += 1
-        if (self.last_update_time is None or
-                time.perf_counter() - self.last_update_time > self.refresh_time):
+        if ((self.last_update_time is None) or
+                (time.perf_counter() - self.last_update_time > self.refresh_time)):
             self.__update_bar(count, False)
 
-    def end(self):
+    def ready(self):
         self.__update_bar(self.count, True)

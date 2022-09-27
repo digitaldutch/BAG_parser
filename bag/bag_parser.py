@@ -249,8 +249,8 @@ class BagParser:
 
     def __update_status(self, final=False):
         if (final or
-                self.gui_time is None or
-                time.perf_counter() - self.gui_time > 0.5):
+                (self.gui_time is None) or
+                (time.perf_counter() - self.gui_time > 0.5)):
 
             self.gui_time = time.perf_counter()
             self.elapsed_time = self.gui_time - self.start_time

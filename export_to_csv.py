@@ -1,5 +1,5 @@
-from database_sqlite import DatabaseSqlite
+from exporter import Exporter
 
-db_sqlite = DatabaseSqlite()
+csv_exporter = Exporter()
 
-db_sqlite.export_to_csv()
+csv_exporter.export_to_csv('output/adressen.csv')
