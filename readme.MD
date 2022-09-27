@@ -1,14 +1,18 @@
+[![GitHub license](https://img.shields.io/github/license/digitaldutch/BAG_parser)](https://github.com/digitaldutch/BAG_parser/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/digitaldutch/BAG_parser)](https://github.com/digitaldutch/BAG_parser/issues)
+
 # Digital Dutch BAG parser
 
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-user-friendly SQLite database by running a single Python script. No need to install dependencies or a database server.
+user-friendly, file based, SQLite database by running a single Python script. 
+No need to install any dependencies or a database server.
 
 ## Download BAG SQLite
-The latest BAG in SQLite format can be downloaded from our [releases section](https://github.com/digitaldutch/BAG_parser/releases).
+If you don't want to run the script yourself, you can download the latest BAG in SQLite format can be downloaded from
+our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
 ## Description ##
-
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
 from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
 
@@ -60,6 +64,9 @@ FROM adressen a
 WHERE postcode = '2514GL'
   AND huisnummer = 68;
 ```
+* When done parsing, use the [import_bag.py](import_bag.py) or [test_sqlite_db.py](test_sqlite_db.py) to create a *.csv
+file. These functions are easy to customize. I myself use one (not on GitHub yet, as it is customized) to pump the 
+SQLite data into a live Firebird database.
 
 ## Python commands ##
 
