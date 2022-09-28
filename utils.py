@@ -81,7 +81,7 @@ def bag_date_to_date(bag_date):
 
 def bag_pos_to_coordinates(pos):
     pos = pos.split()
-    return rijksdriehoek.rd_to_wgs(float(pos[0]), float(pos[1]))
+    return rijksdriehoek.rijksdriehoek_to_wgs84(float(pos[0]), float(pos[1]))
 
 
 def escape_sql_text(text):
