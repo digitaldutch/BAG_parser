@@ -6,7 +6,7 @@
 ## TL;DR
 Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
 user-friendly, file based, SQLite database by running a single Python script. 
-No need to install any dependencies or a database server.
+No need to install any dependencies or a database server...
 
 ## Download BAG SQLite
 If you don't want to run the script yourself, you can download the latest BAG in SQLite or CSV format from
