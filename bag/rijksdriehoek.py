@@ -89,21 +89,3 @@ def wgs84_to_rijksdriehoek(phi, lam):
         y += s * delta_phi ** p * delta_lambda ** q
 
     return [x, y]
-
-
-# if __name__ == "__main__":
-#     # Test code
-#
-#     coord_rd = [[121687, 487484], # Amsterdam
-#                 [ 92565, 437428], # Rotterdam
-#                 [176331, 317462]] # Maastricht
-#
-#     coord_wgs = [[52.37422, 4.89801], # Amsterdam
-#                 [51.92183, 4.47959], # Rotterdam
-#                 [50.84660, 5.69006]] # Maastricht
-#
-#     for x, y in coord_rd:
-#         print(rd_to_wgs(x, y))
-#
-#     for phi, lam in coord_wgs:
-#         print(wgs_to_rd(phi, lam))
