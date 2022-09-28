@@ -9,7 +9,7 @@ user-friendly, file based, SQLite database by running a single Python script.
 No need to install any dependencies or a database server.
 
 ## Download BAG SQLite
-If you don't want to run the script yourself, you can download the latest BAG in SQLite format from
+If you don't want to run the script yourself, you can download the latest BAG in SQLite and csv format from
 our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
 ## Description ##
