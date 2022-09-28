@@ -4,29 +4,33 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Turns big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
+Converts big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
 user-friendly, file based, SQLite database by running a single Python script. 
-No need to install any dependencies or a database server...
+No need to install any dependencies or a database server. 
 
-## Download BAG SQLite
+Additional scripts will convert this SQLite database to for example CSV format. 
+
+## Download the parsed BAG
 If you don't want to run the script yourself, you can download the latest BAG in SQLite or CSV format from
 our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
-## Description ##
+## About the BAG ##
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
 from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
 
-The bad news is: it comes in a complex and hard to read XML format using thousands of zipped XML files, 
+The bad news is: The original BAG comes in a complex and hard to read XML format using thousands of zipped XML files, 
 which will quickly temper your initial enthusiasm to quite low levels. 
 It also does not include municipalities or provinces and provides coordinates using an obscure system named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
 
-This Python utility parses the BAG database and turns it into a clean, easy to read & use SQLite database.
+## What this parser does ##
+This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
-longitude coordinates. A few BAG bugs are fixed. Year of construction, floor area and intended use of buildings are also provided. 
+longitude coordinates. A few BAG bugs are fixed. 
+Year of construction, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly, or as a source to generate a *.csv file or update your own addresses 
-databases.  
+databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements ##
 * Python 3.8 probably works, but 3.10 is 20% quicker.
@@ -64,8 +68,8 @@ FROM adressen a
 WHERE postcode = '2514GL'
   AND huisnummer = 68;
 ```
-* When done parsing, use the [import_bag.py](import_bag.py) or [test_sqlite_db.py](test_sqlite_db.py) to create a *.csv
-file. These functions are easy to customize. I myself use one (not on GitHub yet, as it is customized) to pump the 
+* When done parsing, use the [export_to_csv_postcodes.py](export_to_csv_postcodes.py) or [export_to_csv.py](export_to_csv.py) 
+to create a *.csv file. These functions are easy to customize. I myself use one (not on GitHub yet, as it is customized) to pump the 
 SQLite data into a live Firebird database.
 
 ## Python commands ##

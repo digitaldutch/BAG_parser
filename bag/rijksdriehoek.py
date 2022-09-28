@@ -2,17 +2,15 @@
 # Wikipedia: https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten
 # Source: https://github.com/djvanderlaan/rijksdriehoek
 
-# Locatie van de spits van de Onze Lieve Vrouwetoren ('Lange Jan') in Amersfoort
+# Locatie van de spits van de Onze-Lieve-Vrouwetoren ('Lange Jan') in Amersfoort
 X0 = 155000
 Y0 = 463000
 PHI0 = 52.15517440
 LAM0 = 5.38720621
 
 
-def rd_to_wgs(x, y):
-    """
-    Convert rijksdriehoek-coordinates into WGS84 coordinates. Input parameters: x (float), y (float).
-    """
+def rijksdriehoek_to_wgs84(x, y):
+    # Convert rijksdriehoek-coordinates into WGS84 coordinates. Input parameters: x (float), y (float).
 
     pqk = [(0, 1, 3235.65389),
            (2, 0, -32.58297),
@@ -54,10 +52,8 @@ def rd_to_wgs(x, y):
     return [phi, lam]
 
 
-def wgs_to_rd(phi, lam):
-    """
-    Convert WGS84 coordinates into rijksdriehoek-coordinates. Input parameters: phi (float), lambda (float).
-    """
+def wgs84_to_rijksdriehoek(phi, lam):
+    # Convert WGS84 coordinates into rijksdriehoek-coordinates. Input parameters: phi (float), lambda (float).
 
     pqr = [(0, 1, 190094.945),
            (1, 1, -11832.228),

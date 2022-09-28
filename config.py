@@ -1,7 +1,7 @@
 import locale
 
-version = 42
-version_date = '27 september 2022'
+version = 43
+version_date = '28 september 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -26,6 +26,9 @@ delete_no_longer_needed_bag_tables = True
 # default if available.
 # https://imbag.github.io/praktijkhandleiding/artikelen/hoe-wordt-de-verkorte-schrijfwijze-van-een-openbare-ruimte-bepaald
 use_short_street_names = False
+
+# Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
+read_geometries = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.

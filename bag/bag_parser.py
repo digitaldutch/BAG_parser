@@ -40,10 +40,13 @@ class BagParser:
         if self.tag_name == 'Woonplaats':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
             ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
+            ns_gml = "{http://www.opengis.net/gml/3.2}"
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999WPL"
             self.total_xml = 3889  # required for progress indicator. Actual numbers can be found in the console or log.
+            # Initialization required as BAG leaves fields out of the data if it is empty
+            self.data_init = {'geometry': ''}
             self.save_to_database = self.__save_woonplaats
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -51,6 +54,7 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
+                ns_gml + 'posList': 'geometry',
             }
             self.db_tag_parent_fields = {}
         elif self.tag_name == 'GemeenteWoonplaatsRelatie':
