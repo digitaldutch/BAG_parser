@@ -2,7 +2,7 @@
 # Wikipedia: https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten
 # Source: https://github.com/djvanderlaan/rijksdriehoek
 
-# Locatie van de spits van de Onze-Lieve-Vrouwetoren ('Lange Jan') in Amersfoort
+# Locatie van de spits van de Onze Lieve Vrouwetoren ('Lange Jan') in Amersfoort
 X0 = 155000
 Y0 = 463000
 PHI0 = 52.15517440
