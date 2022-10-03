@@ -75,7 +75,8 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py) ###
-Parses the original BAG file and transforms it into a SQLite database. Takes about an hour.
+Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour or 1.5 if you switch on 
+the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py) ###
 Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 30 seconds.
@@ -94,9 +95,8 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 
 ## Limitations ##
 * Only active addresses are included. History data is left out.
-* No geometry data is parsed, only coordinates.
 * Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). Other addresses (nevenadres) are ignored.
-* Probably several more things that I forgot.
+* Probably several more things that I forgot. Let me know by filing a GitHub issue.
 
 Just a limited amount of data is parsed. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/), 
 who have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
