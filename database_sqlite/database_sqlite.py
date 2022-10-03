@@ -36,10 +36,14 @@ class DatabaseSqlite:
         self.connection.execute("VACUUM")
 
     def save_woonplaats(self, data):
-        # self.text_file.write(json.dumps(woonplaats) + '\n')
-        self.connection.execute(
-            "INSERT INTO woonplaatsen (id, naam) VALUES(?, ?)",
-            (data["id"], data["naam"]))
+        if config.parse_geometries:
+            self.connection.execute(
+                "INSERT INTO woonplaatsen (id, naam, geometry) VALUES(?, ?, ?)",
+                (data["id"], data["naam"], data["geometry"]))
+        else:
+            self.connection.execute(
+                "INSERT INTO woonplaatsen (id, naam) VALUES(?, ?)",
+                (data["id"], data["naam"]))
 
     def save_gemeenten(self, gemeenten):
         self.connection.executemany(
@@ -97,21 +101,37 @@ class DatabaseSqlite:
 
     def save_ligplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status)
-               VALUES(?, ?, ?, ?, ?)
-            """,
-            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
-        )
+        if config.parse_geometries:
+            self.connection.execute(
+                """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status, geometry)
+                   VALUES(?, ?, ?, ?, ?, ?)
+                """,
+                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+            )
+        else:
+            self.connection.execute(
+                """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status)
+                   VALUES(?, ?, ?, ?, ?)
+                """,
+                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
+            )
 
     def save_standplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status)
-               VALUES(?, ?, ?, ?, ?)
-            """,
-            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
-        )
+        if config.parse_geometries:
+            self.connection.execute(
+                """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status, geometry)
+                   VALUES(?, ?, ?, ?, ?, ?)
+                """,
+                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+            )
+        else:
+            self.connection.execute(
+                """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status)
+                   VALUES(?, ?, ?, ?, ?)
+                """,
+                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
+            )
 
     def create_bag_tables(self):
         self.connection.executescript("""
@@ -147,6 +167,19 @@ class DatabaseSqlite:
             CREATE TABLE standplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
               status TEXT);              
         """)
+        self.connection.commit()
+
+        if config.parse_geometries:
+            self.connection.executescript("""
+                ALTER TABLE woonplaatsen ADD geometry TEXT;
+                
+                ALTER TABLE panden ADD geometry TEXT;
+                
+                ALTER TABLE ligplaatsen ADD geometry TEXT;
+                
+                ALTER TABLE standplaatsen ADD geometry TEXT;
+        """)
+
         self.connection.commit()
 
     def create_indices_bag(self):
@@ -281,7 +314,7 @@ class DatabaseSqlite:
             raise Exception(f"SQLite database '{config.file_db_sqlite}' bevat geen adressen tabel. "
                             "Importeer BAG eerst.")
 
-    def test_bag(self):
+    def test_bag_adressen(self):
         self.check_valid_database()
 
         utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_sqlite}'")
@@ -346,26 +379,25 @@ class DatabaseSqlite:
                         f"Niet Amsterdam (3594): {woonplaats_id:n}", woonplaats_id != 1050)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
-        utils.print_log(f"info: adressen: {aantal:n}")
+        utils.print_log(f"info: adressen: {aantal:n}", aantal < 9000000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT null;")
-        utils.print_log(f"info: panden: {aantal:n}")
+        utils.print_log(f"info: panden: {aantal:n}", aantal < 9000000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='ligplaats';")
-        utils.print_log(f"info: ligplaatsen: {aantal:n}")
+        utils.print_log(f"info: ligplaatsen: {aantal:n}", aantal < 10000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='standplaats';")
-        utils.print_log(f"info: standplaatsen: {aantal:n}")
+        utils.print_log(f"info: standplaatsen: {aantal:n}", aantal < 20000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM openbare_ruimten;")
-        utils.print_log(f"info: openbare ruimten: {aantal:n}")
+        utils.print_log(f"info: openbare ruimten: {aantal:n}", aantal < 250000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM woonplaatsen;")
-        utils.print_log(f"info: woonplaatsen: {aantal:n}")
+        utils.print_log(f"info: woonplaatsen: {aantal:n}", aantal < 2000)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM gemeenten;")
-        utils.print_log(f"info: gemeenten: {aantal}")
+        utils.print_log(f"info: gemeenten: {aantal}", aantal < 300)
 
         aantal = self.fetchone("SELECT COUNT(*) FROM provincies;")
-        utils.print_log(f"info: provincies: {aantal}")
-
+        utils.print_log(f"info: provincies: {aantal}", aantal != 12)

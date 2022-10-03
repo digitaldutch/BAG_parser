@@ -5,6 +5,7 @@ import time
 import zipfile
 from _datetime import datetime
 from xml.etree import ElementTree
+import config
 
 import utils
 
@@ -45,7 +46,6 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999WPL"
             self.total_xml = 3889  # required for progress indicator. Actual numbers can be found in the console or log.
-            # Initialization required as BAG leaves fields out of the data if it is empty
             self.data_init = {'geometry': ''}
             self.save_to_database = self.__save_woonplaats
             self.db_fields = {
@@ -54,8 +54,9 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
-                ns_gml + 'posList': 'geometry',
             }
+            if config.parse_geometries:
+                self.db_fields[ns_gml + 'posList'] = 'geometry'
             self.db_tag_parent_fields = {}
         elif self.tag_name == 'GemeenteWoonplaatsRelatie':
             ns_gwr_product = "{www.kadaster.nl/schemas/lvbag/gem-wpl-rel/gwr-producten-lvc/v20200601}"
@@ -128,11 +129,12 @@ class BagParser:
         elif self.tag_name == 'Pand':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
             ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
+            ns_gml = "{http://www.opengis.net/gml/3.2}"
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999PND"
             self.total_xml = 20352252  # required for progress indicator
-            self.data_init = {}
+            self.data_init = {'geometry': ''}
             self.save_to_database = self.__save_pand
 
             self.db_fields = {
@@ -141,6 +143,7 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
+                ns_gml + 'posList': 'geometry',
             }
             self.db_tag_parent_fields = {}
         elif self.tag_name == 'Verblijfsobject':
@@ -179,17 +182,18 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999LIG"
             self.total_xml = 17653  # required for progress indicator
-            self.data_init = {'pos': '', 'latitude': '', 'longitude': ''}
+            self.data_init = {'pos': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_ligplaats
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
-                ns_gml + 'posList': 'pos',
+                ns_gml + 'posList': 'geometry',
                 ns_objecten + 'aanduidingRecordInactief': 'inactief',
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
             }
+
             # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
             # Therefore, identification is done by combining the tag with the parent tag
             self.db_tag_parent_fields = {
@@ -204,12 +208,12 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999STA"
             self.total_xml = 49543  # required for progress indicator
-            self.data_init = {'pos': '', 'latitude': '', 'longitude': ''}
+            self.data_init = {'pos': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_standplaats
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
-                ns_gml + 'posList': 'pos',
+                ns_gml + 'posList': 'geometry',
                 ns_objecten + 'aanduidingRecordInactief': 'inactief',
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
@@ -301,6 +305,8 @@ class BagParser:
         if (self.__bag_einddatum_valid(data) and
                 data['status'] == "Woonplaats aangewezen"):
             self.count_db += 1
+            if data['geometry']:
+                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.__update_status()
             self.database.save_woonplaats(data)
 
@@ -330,6 +336,8 @@ class BagParser:
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
             self.count_db += 1
+            if data['geometry']:
+                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.__update_status()
             self.database.save_pand(data)
 
@@ -345,8 +353,9 @@ class BagParser:
     def __save_ligplaats(self, data):
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
-            if data['pos']:
-                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['pos'])
+            if data['geometry']:
+                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['geometry'])
+                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.count_db += 1
             self.__update_status()
             self.database.save_ligplaats(data)
@@ -354,8 +363,9 @@ class BagParser:
     def __save_standplaats(self, data):
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
-            if data['pos']:
-                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['pos'])
+            if data['geometry']:
+                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['geometry'])
+                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.count_db += 1
             self.__update_status()
             self.database.save_standplaats(data)

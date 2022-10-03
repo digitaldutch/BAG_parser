@@ -79,6 +79,19 @@ def bag_date_to_date(bag_date):
         return None
 
 
+def bag_geometry_to_wgs_geojson(coordinates_rd):
+    coordinates_rd = coordinates_rd.split()
+    coordinates_wgs = ''
+    it = iter(coordinates_rd)
+    for x, y in zip(it, it):
+        lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
+        if coordinates_wgs != '':
+            coordinates_wgs += ','
+        coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
+
+    coordinates_wgs = '[[' + coordinates_wgs + ']]'
+    return coordinates_wgs
+
 def bag_pos_to_coordinates(pos):
     pos = pos.split()
     return rijksdriehoek.rijksdriehoek_to_wgs84(float(pos[0]), float(pos[1]))
