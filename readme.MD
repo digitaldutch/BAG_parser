@@ -75,7 +75,7 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py) ###
-Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour or 1.5 if you switch on 
+Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour. 1.5 hours if you switch on 
 the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py) ###
