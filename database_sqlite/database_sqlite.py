@@ -252,8 +252,8 @@ class DatabaseSqlite:
 
     def adressen_fix_bag_errors(self):
         # The BAG contains some buildings with bouwjaar 9999
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2100;")
-        utils.print_log("fix: test adressen met ongeldig bouwjaar > 2100: " + str(aantal))
+        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2050;")
+        utils.print_log("fix: test adressen met ongeldig bouwjaar > 2050: " + str(aantal))
 
         if aantal > 0:
             utils.print_log(f"fix: verwijder {aantal:n} ongeldige bouwjaren (> 2100)")

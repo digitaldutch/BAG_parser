@@ -32,12 +32,12 @@ delete_no_longer_needed_bag_tables = True
 use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
+# The data is stored in polygon geojson format in the geometry field.
 # Parsing with geometries increases the run time from 1 hour to 2.
 # And the database size will increase from 1.7GB to 16GB or 9GB if no longer needed tables are deleted.
 parse_geometries = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.
-# Set to 0 if you want warning messages and manually check and correct them yourself.
-# If enabled importing the BAG will take 30 minutes more (1.5 hours).
+# Set to 0 if you prefer warning messages and manually check and correct these entries yourself.
 delete_addresses_without_public_spaces_if_less_than = 10

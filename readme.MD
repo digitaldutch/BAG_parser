@@ -38,7 +38,7 @@ databases. There are a couple of options available in the [config.py](config.py)
 ## Usage ##
 * Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
 `git clone https://github.com/digitaldutch/BAG_parser`  
-Update parser:  
+Update parser:
 `git pull https://github.com/digitaldutch/BAG_parser`
 * [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the `input` folder.
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
