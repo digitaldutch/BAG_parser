@@ -42,6 +42,7 @@ Update parser:
 `git pull https://github.com/digitaldutch/BAG_parser`
 * [Download the BAG (2.8 GB)](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) and save the file as `bag.zip` in the `input` folder.
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
+* Set your options in [config.py](config.py)
 * Run `import_bag.py`
 * Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
 * Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).

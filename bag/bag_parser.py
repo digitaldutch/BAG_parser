@@ -237,6 +237,7 @@ class BagParser:
 
         for file_xml in xml_files:
             self.__parse_file(file_xml)
+
         self.database.commit()
 
         self.__update_status(True)
@@ -337,7 +338,7 @@ class BagParser:
                 self.__bag_begindatum_valid(data)):
             self.count_db += 1
             if data['geometry']:
-                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
+                data["geometry"] = utils.bag_geometry_3d_to_wgs_geojson(data['geometry'])
             self.__update_status()
             self.database.save_pand(data)
 

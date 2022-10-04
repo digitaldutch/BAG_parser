@@ -31,6 +31,7 @@ g_parser.parse()
 
 # parse BAG
 b_parser = BagParser(db_sqlite)
+
 b_parser.parse('Woonplaats')
 b_parser.parse('GemeenteWoonplaatsRelatie')
 b_parser.parse('OpenbareRuimte')

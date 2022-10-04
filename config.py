@@ -1,7 +1,7 @@
 import locale
 
-version = 44
-version_date = '1 october 2022'
+version = 45
+version_date = '4 october 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -24,7 +24,7 @@ create_adressen_table = True
 # If an adressen table is created some BAG tables are no longer needed and can be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
 # You can also delete these tables afterwards using the utils_sqlite_shrink.py script.
-delete_no_longer_needed_bag_tables = False
+delete_no_longer_needed_bag_tables = True
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.
@@ -32,7 +32,9 @@ delete_no_longer_needed_bag_tables = False
 use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
-parse_geometries = True
+# Parsing with geometries increases the run time from 1 hour to 2.
+# And the database size will increase from 1.7GB to 16GB or 9GB if no longer needed tables are deleted.
+parse_geometries = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.
