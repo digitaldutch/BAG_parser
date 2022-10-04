@@ -36,14 +36,9 @@ class DatabaseSqlite:
         self.connection.execute("VACUUM")
 
     def save_woonplaats(self, data):
-        if config.parse_geometries:
-            self.connection.execute(
-                "INSERT INTO woonplaatsen (id, naam, geometry) VALUES(?, ?, ?)",
-                (data["id"], data["naam"], data["geometry"]))
-        else:
-            self.connection.execute(
-                "INSERT INTO woonplaatsen (id, naam) VALUES(?, ?)",
-                (data["id"], data["naam"]))
+        self.connection.execute(
+            "INSERT INTO woonplaatsen (id, naam, geometry) VALUES(?, ?, ?)",
+            (data["id"], data["naam"], data["geometry"]))
 
     def save_gemeenten(self, gemeenten):
         self.connection.executemany(
@@ -84,10 +79,10 @@ class DatabaseSqlite:
     def save_pand(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO panden (id, bouwjaar, status)
-               VALUES(?, ?, ?)
+            """REPLACE INTO panden (id, bouwjaar, status, geometry)
+               VALUES(?, ?, ?, ?)
             """,
-            (data["id"], data["bouwjaar"], data["status"]))
+            (data["id"], data["bouwjaar"], data["status"], data["geometry"]))
 
     def save_verblijfsobject(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
@@ -101,37 +96,21 @@ class DatabaseSqlite:
 
     def save_ligplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
-        if config.parse_geometries:
-            self.connection.execute(
-                """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status, geometry)
-                   VALUES(?, ?, ?, ?, ?, ?)
-                """,
-                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
-            )
-        else:
-            self.connection.execute(
-                """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status)
-                   VALUES(?, ?, ?, ?, ?)
-                """,
-                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
-            )
+        self.connection.execute(
+            """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status, geometry)
+               VALUES(?, ?, ?, ?, ?, ?)
+            """,
+            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+        )
 
     def save_standplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
-        if config.parse_geometries:
-            self.connection.execute(
-                """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status, geometry)
-                   VALUES(?, ?, ?, ?, ?, ?)
-                """,
-                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
-            )
-        else:
-            self.connection.execute(
-                """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status)
-                   VALUES(?, ?, ?, ?, ?)
-                """,
-                (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"])
-            )
+        self.connection.execute(
+            """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status, geometry)
+               VALUES(?, ?, ?, ?, ?, ?)
+            """,
+            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+        )
 
     def create_bag_tables(self):
         self.connection.executescript("""
@@ -142,7 +121,7 @@ class DatabaseSqlite:
             CREATE TABLE provincies (id INTEGER PRIMARY KEY, naam TEXT);
             
             DROP TABLE IF EXISTS woonplaatsen;
-            CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY, naam TEXT, gemeente_id INTEGER);
+            CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY, naam TEXT, gemeente_id INTEGER, geometry TEXT);
             
             DROP TABLE IF EXISTS openbare_ruimten;
             CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
@@ -153,7 +132,7 @@ class DatabaseSqlite:
               toevoeging TEXT, woonplaats_id TEXT, openbareruimte_id TEXT, status TEXT);
 
             DROP TABLE IF EXISTS panden;
-            CREATE TABLE panden (id TEXT PRIMARY KEY, bouwjaar INTEGER, status TEXT);
+            CREATE TABLE panden (id TEXT PRIMARY KEY, bouwjaar INTEGER, status TEXT, geometry TEXT);
 
             DROP TABLE IF EXISTS verblijfsobjecten;
             CREATE TABLE verblijfsobjecten (id TEXT PRIMARY KEY, nummer_id TEXT, pand_id TEXT, 
@@ -161,25 +140,12 @@ class DatabaseSqlite:
 
             DROP TABLE IF EXISTS ligplaatsen;
             CREATE TABLE ligplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
-              status TEXT);              
+              status TEXT, geometry TEXT);              
 
             DROP TABLE IF EXISTS standplaatsen;
             CREATE TABLE standplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
-              status TEXT);              
+              status TEXT, geometry TEXT);              
         """)
-        self.connection.commit()
-
-        if config.parse_geometries:
-            self.connection.executescript("""
-                ALTER TABLE woonplaatsen ADD geometry TEXT;
-                
-                ALTER TABLE panden ADD geometry TEXT;
-                
-                ALTER TABLE ligplaatsen ADD geometry TEXT;
-                
-                ALTER TABLE standplaatsen ADD geometry TEXT;
-        """)
-
         self.connection.commit()
 
     def create_indices_bag(self):
@@ -200,17 +166,18 @@ class DatabaseSqlite:
         self.connection.commit()
 
     def create_adressen_from_bag(self):
-        self.connection.executescript("""
+
+        self.connection.executescript(f"""
             DROP TABLE IF EXISTS adressen;
             
             CREATE TABLE adressen (nummer_id TEXT PRIMARY KEY, pand_id TEXT, verblijfsobject_id TEXT, 
                 gemeente_id INTEGER, woonplaats_id INTEGER, openbare_ruimte_id INTEGER, object_type TEXT, 
                 gebruiksdoel TEXT, postcode TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, 
-                oppervlakte FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER);
+                oppervlakte FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER, geometry TEXT);
 
             INSERT INTO adressen (nummer_id, pand_id, verblijfsobject_id, gemeente_id, woonplaats_id, 
                 openbare_ruimte_id, object_type, gebruiksdoel, postcode, huisnummer, huisletter, toevoeging, 
-                oppervlakte, longitude, latitude, bouwjaar)
+                oppervlakte, longitude, latitude, bouwjaar, geometry)
             SELECT
               n.id AS nummer_id,
               p.id AS pand_id,
@@ -227,7 +194,8 @@ class DatabaseSqlite:
               v.oppervlakte,
               v.longitude,
               v.latitude,
-              p.bouwjaar
+              p.bouwjaar,
+              p.geometry
             FROM nummers n
             LEFT JOIN openbare_ruimten o  ON o.id        = n.openbareruimte_id
             LEFT JOIN woonplaatsen w      ON w.id        = o.woonplaats_id
@@ -239,6 +207,7 @@ class DatabaseSqlite:
         self.adressen_import_standplaatsen()
         self.adressen_update_woonplaatsen_from_nummers()
         self.create_indices_adressen()
+
         self.connection.commit()
 
     def adressen_import_ligplaatsen(self):
@@ -246,8 +215,9 @@ class DatabaseSqlite:
             UPDATE adressen SET
               latitude = l.latitude,
               longitude = l.longitude,
+              geometry = l.geometry,
               object_type = 'ligplaats'
-            FROM (SELECT latitude, longitude, nummer_id from ligplaatsen) AS l
+            FROM (SELECT latitude, longitude, geometry, nummer_id from ligplaatsen) AS l
             WHERE l.nummer_id = adressen.nummer_id;           
         """)
 
@@ -256,8 +226,9 @@ class DatabaseSqlite:
             UPDATE adressen SET
               latitude = s.latitude,
               longitude = s.longitude,
+              geometry = s.geometry,
               object_type = 'standplaats'
-            FROM (SELECT latitude, longitude, nummer_id from standplaatsen) AS s
+            FROM (SELECT latitude, longitude, geometry, nummer_id from standplaatsen) AS s
             WHERE s.nummer_id = adressen.nummer_id;
         """)
 
