@@ -99,7 +99,8 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 * Only active addresses are included. History data is left out.
 * Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). Other addresses (nevenadres) are ignored.
 * Probably several more things that I forgot. Let me know by filing a GitHub issue.
-* The WGS84 coordinates are calculated using [approximation equations](docs/Benaderingsformules_RD_WGS.pdf) with a sub-decimeter accuracy.
+* The WGS84 coordinates are calculated using [approximation equations](docs/Benaderingsformules_RD_WGS.pdf) with accuracy
+up to 1 meter.
 
 Just a limited amount of data is parsed. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/), 
 who have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
