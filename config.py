@@ -1,7 +1,7 @@
 import locale
 
-version = 45
-version_date = '4 october 2022'
+version = 46
+version_date = '6 october 2022'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -33,7 +33,7 @@ use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
 # The data is stored in polygon geojson format in the geometry field.
-# Parsing with geometries increases the run time from 1 hour to 2.
+# Parsing with geometries increases the run time from ~1 to ~2 hours.
 # And the database size will increase from 1.7GB to 16GB or 9GB if no longer needed tables are deleted.
 parse_geometries = False
 

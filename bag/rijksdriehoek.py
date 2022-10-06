@@ -2,6 +2,12 @@
 # Wikipedia: https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten
 # Source: https://github.com/djvanderlaan/rijksdriehoek
 
+# Benaderingsformules zijn gemaakt door F.H. Schreutelkamp en G.L. Strang van Hees
+# Document: Benaderingsformules voor de transformatie tussen RD- en WGS84-kaartcoördinaten
+# https://nedcad.nl/concept/coordinaat-transformaties/
+
+# Precision
+
 # Locatie van de spits van de Onze Lieve Vrouwetoren ('Lange Jan') in Amersfoort
 X0 = 155000
 Y0 = 463000

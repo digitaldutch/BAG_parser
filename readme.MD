@@ -20,13 +20,14 @@ from the Dutch cadastre agency named Kadaster. Hooray 🙂.
 
 The bad news is: The original BAG comes in a complex and hard to read XML format using thousands of zipped XML files, 
 which will quickly temper your initial enthusiasm to quite low levels. 
-It also does not include municipalities or provinces and provides coordinates using an obscure system named 
+It also does not include municipalities or provinces and provides coordinates using a system that non-experts won't 
+expect named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
 
 ## What this parser does ##
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
-Municipalities (gemeenten) and provinces (provincies) are added. Coordinates are converted to standard latitude, 
-longitude coordinates. A few BAG bugs are fixed. 
+Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
+to standard WGS84 latitude and longitude coordinates. A few BAG bugs are fixed. 
 Year of construction, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly, or as a source to generate a *.csv file or update your own addresses 
@@ -98,6 +99,7 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 * Only active addresses are included. History data is left out.
 * Residence info (verblijfsobjecten) is only added to the main address (hoofdadres). Other addresses (nevenadres) are ignored.
 * Probably several more things that I forgot. Let me know by filing a GitHub issue.
+* The WGS84 coordinates are calculated using [approximation equations](docs/Benaderingsformules_RD_WGS.pdf) with a sub-decimeter accuracy.
 
 Just a limited amount of data is parsed. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/), 
 who have their own, much more complete [parser](https://github.com/nlextract/NLExtract).
