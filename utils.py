@@ -107,9 +107,9 @@ def bag_geometry_3d_to_wgs_geojson(coordinates_rd):
     return coordinates_wgs
 
 
-def bag_pos_to_coordinates(pos):
+def bag_pos_to_rd_coordinates(pos):
     pos = pos.split()
-    return rijksdriehoek.rijksdriehoek_to_wgs84(float(pos[0]), float(pos[1]))
+    return float(pos[0]), float(pos[1])
 
 
 def escape_sql_text(text):

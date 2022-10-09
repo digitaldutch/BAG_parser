@@ -6,6 +6,7 @@ import zipfile
 from _datetime import datetime
 from xml.etree import ElementTree
 import config
+from bag import rijksdriehoek
 
 import utils
 
@@ -155,7 +156,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999VBO"
             self.total_xml = 21148447  # required for progress indicator
-            self.data_init = {'pos': '', 'latitude': '', 'longitude': ''}
+            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': ''}
             self.save_to_database = self.__save_verblijfsobject
 
             self.db_fields = {
@@ -182,7 +183,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999LIG"
             self.total_xml = 17653  # required for progress indicator
-            self.data_init = {'pos': '', 'latitude': '', 'longitude': '', 'geometry': ''}
+            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_ligplaats
 
             self.db_fields = {
@@ -208,7 +209,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999STA"
             self.total_xml = 49543  # required for progress indicator
-            self.data_init = {'pos': '', 'latitude': '', 'longitude': '', 'geometry': ''}
+            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_standplaats
 
             self.db_fields = {
@@ -346,7 +347,8 @@ class BagParser:
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
             if data['pos']:
-                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['pos'])
+                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['pos'])
+                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
             self.count_db += 1
             self.__update_status()
             self.database.save_verblijfsobject(data)
@@ -355,7 +357,8 @@ class BagParser:
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
             if data['geometry']:
-                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['geometry'])
+                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
+                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
                 data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.count_db += 1
             self.__update_status()
@@ -365,7 +368,8 @@ class BagParser:
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data)):
             if data['geometry']:
-                [data["latitude"], data["longitude"]] = utils.bag_pos_to_coordinates(data['geometry'])
+                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
+                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
                 data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
             self.count_db += 1
             self.__update_status()

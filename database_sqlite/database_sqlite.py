@@ -87,29 +87,31 @@ class DatabaseSqlite:
     def save_verblijfsobject(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, latitude, longitude, gebruiksdoel, 
-              status) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+            """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, rd_x, rd_y, latitude, longitude, 
+            gebruiksdoel, status) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (data["id"], data["nummer_id"], data["pand_id"], data["oppervlakte"], data["latitude"], data["longitude"],
-             data["gebruiksdoel"], data["status"])
+            (data["id"], data["nummer_id"], data["pand_id"], data["oppervlakte"], data["rd_x"], data["rd_y"],
+             data["latitude"], data["longitude"], data["gebruiksdoel"], data["status"])
         )
 
     def save_ligplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO ligplaatsen (id, nummer_id, latitude, longitude, status, geometry)
-               VALUES(?, ?, ?, ?, ?, ?)
+            """REPLACE INTO ligplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, status, geometry)
+               VALUES(?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
+             data["status"], data["geometry"])
         )
 
     def save_standplaats(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO standplaatsen (id, nummer_id, latitude, longitude, status, geometry)
-               VALUES(?, ?, ?, ?, ?, ?)
+            """REPLACE INTO standplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, status, geometry)
+               VALUES(?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (data["id"], data["nummer_id"], data["latitude"], data["longitude"], data["status"], data["geometry"])
+            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
+             data["status"], data["geometry"])
         )
 
     def create_bag_tables(self):
@@ -136,15 +138,16 @@ class DatabaseSqlite:
 
             DROP TABLE IF EXISTS verblijfsobjecten;
             CREATE TABLE verblijfsobjecten (id TEXT PRIMARY KEY, nummer_id TEXT, pand_id TEXT, 
-              oppervlakte FLOAT, latitude FLOAT, longitude FLOAT, gebruiksdoel TEXT, status TEXT);              
+              oppervlakte FLOAT, rd_x FLOAT, rd_y FLOAT, latitude FLOAT, longitude FLOAT, gebruiksdoel TEXT, 
+              status TEXT);              
 
             DROP TABLE IF EXISTS ligplaatsen;
-            CREATE TABLE ligplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
-              status TEXT, geometry TEXT);              
+            CREATE TABLE ligplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, rd_x FLOAT, rd_y FLOAT, latitude FLOAT, 
+              longitude FLOAT, status TEXT, geometry TEXT);              
 
             DROP TABLE IF EXISTS standplaatsen;
-            CREATE TABLE standplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, latitude FLOAT, longitude FLOAT, 
-              status TEXT, geometry TEXT);              
+            CREATE TABLE standplaatsen (id TEXT PRIMARY KEY, nummer_id TEXT, rd_x FLOAT, rd_y FLOAT, latitude FLOAT, 
+              longitude FLOAT, status TEXT, geometry TEXT);              
         """)
         self.connection.commit()
 
@@ -173,11 +176,12 @@ class DatabaseSqlite:
             CREATE TABLE adressen (nummer_id TEXT PRIMARY KEY, pand_id TEXT, verblijfsobject_id TEXT, 
                 gemeente_id INTEGER, woonplaats_id INTEGER, openbare_ruimte_id INTEGER, object_type TEXT, 
                 gebruiksdoel TEXT, postcode TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, 
-                oppervlakte FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER, geometry TEXT);
+                oppervlakte FLOAT, rd_x FLOAT, rd_y FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER, 
+                geometry TEXT);
 
             INSERT INTO adressen (nummer_id, pand_id, verblijfsobject_id, gemeente_id, woonplaats_id, 
                 openbare_ruimte_id, object_type, gebruiksdoel, postcode, huisnummer, huisletter, toevoeging, 
-                oppervlakte, longitude, latitude, bouwjaar, geometry)
+                oppervlakte, rd_x, rd_y, longitude, latitude, bouwjaar, geometry)
             SELECT
               n.id AS nummer_id,
               p.id AS pand_id,
@@ -192,6 +196,8 @@ class DatabaseSqlite:
               n.huisletter,
               n.toevoeging,
               v.oppervlakte,
+              v.rd_x,
+              v.rd_y,
               v.longitude,
               v.latitude,
               p.bouwjaar,
@@ -213,22 +219,26 @@ class DatabaseSqlite:
     def adressen_import_ligplaatsen(self):
         self.connection.executescript("""
             UPDATE adressen SET
+              rd_x = l.rd_x,
+              rd_y = l.rd_y,
               latitude = l.latitude,
               longitude = l.longitude,
               geometry = l.geometry,
               object_type = 'ligplaats'
-            FROM (SELECT latitude, longitude, geometry, nummer_id from ligplaatsen) AS l
+            FROM (SELECT rd_x, rd_y, latitude, longitude, geometry, nummer_id from ligplaatsen) AS l
             WHERE l.nummer_id = adressen.nummer_id;           
         """)
 
     def adressen_import_standplaatsen(self):
         self.connection.executescript("""
             UPDATE adressen SET
+              rd_x = s.rd_x,
+              rd_y = s.rd_y,
               latitude = s.latitude,
               longitude = s.longitude,
               geometry = s.geometry,
               object_type = 'standplaats'
-            FROM (SELECT latitude, longitude, geometry, nummer_id from standplaatsen) AS s
+            FROM (SELECT rd_x, rd_y, latitude, longitude, geometry, nummer_id from standplaatsen) AS s
             WHERE s.nummer_id = adressen.nummer_id;
         """)
 
