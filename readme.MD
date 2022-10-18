@@ -34,7 +34,7 @@ table. The SQLite database can be used directly, or as a source to generate a *.
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements ##
-* Python 3.8 probably works, but 3.10 is 20% quicker.
+* Python 3.10 or 3.11. Python 3.8 probably work, but is 20% slower.
 
 ## Usage ##
 * Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
@@ -77,8 +77,8 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py) ###
-Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour. 1.5 hours if you switch on 
-the `parse_geometries` option in the [config.py](config.py).
+Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour or 2 hours if you switch 
+on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py) ###
 Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 30 seconds.

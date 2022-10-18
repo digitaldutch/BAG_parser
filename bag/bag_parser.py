@@ -144,9 +144,11 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
-                ns_gml + 'posList': 'geometry',
             }
+            if config.parse_geometries:
+                self.db_fields[ns_gml + 'posList'] = 'geometry'
             self.db_tag_parent_fields = {}
+
         elif self.tag_name == 'Verblijfsobject':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
             ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
@@ -228,9 +230,11 @@ class BagParser:
         else:
             raise Exception("Tag name not found")
 
-        utils.print_log(f'start: parse XML {self.tag_name}')
+        utils.print_log(f'start: parse {self.tag_name}')
 
         self.__unzip_xml()
+
+        utils.print_log('convert XML files to SQLite')
 
         xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
 
@@ -359,7 +363,10 @@ class BagParser:
             if data['geometry']:
                 [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
                 [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
+                if config.parse_geometries:
+                    data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
+                else:
+                    data["geometry"] = ''
             self.count_db += 1
             self.__update_status()
             self.database.save_ligplaats(data)
@@ -370,7 +377,10 @@ class BagParser:
             if data['geometry']:
                 [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
                 [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
+                if config.parse_geometries:
+                    data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
+                else:
+                    data["geometry"] = ''
             self.count_db += 1
             self.__update_status()
             self.database.save_standplaats(data)
