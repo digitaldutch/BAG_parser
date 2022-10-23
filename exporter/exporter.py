@@ -41,7 +41,7 @@ class Exporter:
 
     def export_to_csv(self, output_filename):
         headers = ['straat', 'huisnummer', 'toevoeging', 'postcode', 'gemeente', 'woonplaats', 'provincie',
-                   'bouwjaar', 'latitude', 'longitude', 'vloeroppervlakte', 'gebruiksdoel']
+                   'bouwjaar', 'rd_x', 'rd_y', 'latitude', 'longitude', 'vloeroppervlakte', 'gebruiksdoel']
 
         sql = """
             SELECT
@@ -53,6 +53,8 @@ class Exporter:
               w.naam                       AS woonplaats,
               p.naam                       AS provincie,
               a.bouwjaar,
+              a.rd_x,
+              a.rd_y,
               a.latitude,
               a.longitude,
               a.oppervlakte                AS vloeroppervlakte,
