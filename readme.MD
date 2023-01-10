@@ -8,15 +8,15 @@ Converts big, complex and hard to read XML Dutch addresses database (BAG or Basi
 user-friendly, file based, SQLite database by running a single Python script. 
 No need to install any dependencies or a database server. 
 
-Additional scripts will convert this SQLite database to for example CSV format. 
+Additional scripts will convert this SQLite database to other formats, like CSV. 
 
 ## Download the parsed BAG
-If you don't want to run the script yourself, you can download the latest BAG in SQLite or CSV format from
+If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
 our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
 ## About the BAG ##
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
-from the Dutch cadastre agency named Kadaster. Hooray 🙂. 
+from the [Dutch cadastre](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) agency named Kadaster. Hooray 🙂. 
 
 The bad news is: The original BAG comes in a complex and hard to read XML format using thousands of zipped XML files, 
 which will quickly temper your initial enthusiasm to quite low levels. 
@@ -34,7 +34,7 @@ table. The SQLite database can be used directly, or as a source to generate a *.
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements ##
-* Python 3.10 or 3.11. Python 3.8 probably work, but is 20% slower.
+* Python 3.10 or 3.11. Python 3.8 probably works, but is 20% slower.
 
 ## Usage ##
 * Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
@@ -60,6 +60,8 @@ SELECT
   a.bouwjaar,
   a.latitude,
   a.longitude,
+  a.rd_x,
+  a.rd_y,
   a.oppervlakte                AS vloeroppervlakte,
   a.gebruiksdoel
 FROM adressen a
