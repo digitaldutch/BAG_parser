@@ -47,7 +47,6 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0654,GM0654,Borsele,29,PV29,Zeeland
 0757,GM0757,Boxtel,30,PV30,Noord-Brabant
 0758,GM0758,Breda,30,PV30,Noord-Brabant
-0501,GM0501,Brielle,28,PV28,Zuid-Holland
 1876,GM1876,Bronckhorst,25,PV25,Gelderland
 0213,GM0213,Brummen,25,PV25,Gelderland
 0899,GM0899,Brunssum,31,PV31,Limburg
@@ -124,7 +123,6 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0399,GM0399,Heiloo,27,PV27,Noord-Holland
 0400,GM0400,Den Helder,27,PV27,Noord-Holland
 0163,GM0163,Hellendoorn,23,PV23,Overijssel
-0530,GM0530,Hellevoetsluis,28,PV28,Zuid-Holland
 0794,GM0794,Helmond,30,PV30,Noord-Brabant
 0531,GM0531,Hendrik-Ido-Ambacht,28,PV28,Zuid-Holland
 0164,GM0164,Hengelo,23,PV23,Overijssel
@@ -299,6 +297,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0096,GM0096,Vlieland,21,PV21,Fryslân
 0718,GM0718,Vlissingen,29,PV29,Zeeland
 0986,GM0986,Voerendaal,31,PV31,Limburg
+1992,GM1992,Voorne aan Zee,28,PV28,Zuid-Holland
 0626,GM0626,Voorschoten,28,PV28,Zuid-Holland
 0285,GM0285,Voorst,25,PV25,Gelderland
 0865,GM0865,Vught,30,PV30,Noord-Brabant
@@ -318,7 +317,6 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 1950,GM1950,Westerwolde,20,PV20,Groningen
 1783,GM1783,Westland,28,PV28,Zuid-Holland
 0098,GM0098,Weststellingwerf,21,PV21,Fryslân
-0614,GM0614,Westvoorne,28,PV28,Zuid-Holland
 0189,GM0189,Wierden,23,PV23,Overijssel
 0296,GM0296,Wijchen,25,PV25,Gelderland
 1696,GM1696,Wijdemeren,27,PV27,Noord-Holland
