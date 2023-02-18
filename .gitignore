@@ -5,3 +5,7 @@
 /input/bag.zip
 /output/
 /temp.py
+__pycache__/
+*.py[cod]
+*$py.class
+*.__pycache__
