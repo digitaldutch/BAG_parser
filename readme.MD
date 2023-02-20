@@ -89,6 +89,9 @@ Exports the addresses in SQLite database to a *.csv file with address info only.
 Exports the addresses in SQLite database to a *.csv file including additional information, like year of construction, 
 latitude, longitude, floor area and intended use of buildings. Takes about 75 seconds.
 
+### [export_to_csv_pc4.py](export_to_csv_pc4.py), [export_to_csv_pc5.py](export_to_csv_pc5.py), [export_to_csv_pc6.py](export_to_csv_pc6.py) ###
+Exports the postal codes (truncated to 4, 5 or all 6 characters respectively) in SQLite database to a *.csv file including number of addresses and average lat/lon of addresses in that zone. Takes several seconds.
+
 ### [test_sqlite_db.py](test_sqlite_db.py) ###
 Checks de SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 

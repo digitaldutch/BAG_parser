@@ -82,3 +82,58 @@ class Exporter:
               LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id;"""
 
         self.__export_to_csv(output_filename, headers, sql)
+
+    def export_to_csv_pc6(self, output_filename):
+      headers = ['pc6', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+
+      # TODO add some more useful aggregates here?
+      sql = """
+          SELECT
+            a.postcode as pc6,
+            avg(a.latitude) as center_lat,
+            avg(a.longitude) as center_lon,
+            count(1) as aantal_adressen,
+            w.naam                       AS woonplaats
+          FROM adressen a
+            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
+          WHERE a.postcode is not ""
+          GROUP BY pc6; """
+
+      self.__export_to_csv(output_filename, headers, sql)
+
+    def export_to_csv_pc5(self, output_filename):
+      headers = ['pc5', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+
+      # TODO add some more useful aggregates here?
+      sql = """
+          SELECT
+            substr(a.postcode,0,6) as pc5,
+            avg(a.latitude) as center_lat,
+            avg(a.longitude) as center_lon,
+            count(1) as aantal_adressen,
+            w.naam                       AS woonplaats
+          FROM adressen a
+            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
+          WHERE a.postcode is not ""
+          GROUP BY pc5; """
+
+      self.__export_to_csv(output_filename, headers, sql)
+
+    def export_to_csv_pc4(self, output_filename):
+      headers = ['pc4', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+
+      # TODO add some more useful aggregates here?
+      sql = """
+          SELECT
+            substr(a.postcode,0,5) as pc4,
+            avg(a.latitude) as center_lat,
+            avg(a.longitude) as center_lon,
+            count(1) as aantal_adressen,
+            w.naam                       AS woonplaats
+          FROM adressen a
+            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
+          WHERE a.postcode is not ""
+          GROUP BY pc4; """
+
+      self.__export_to_csv(output_filename, headers, sql)
+
