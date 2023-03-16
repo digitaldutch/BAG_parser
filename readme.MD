@@ -4,8 +4,8 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Converts big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into a 
-user-friendly, file based, SQLite database by running a single Python script. 
+Converts big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into 
+a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
 No need to install any dependencies or a database server. 
 
 Additional scripts will convert this SQLite database to other formats, like CSV. 
@@ -45,7 +45,7 @@ Update parser:
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Set your options in [config.py](config.py)
 * Run `import_bag.py`
-* Drink cocktails for 1 hour 🌴🍹😎 while watching the progress bar.
+* Drink cocktails for 40 minutes 🌴🍹😎 while watching the progress bar.
 * Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).
 Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
@@ -79,15 +79,15 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py) ###
-Parses the original BAG file and transforms it into a SQLite database. Takes about 1 hour or 2 hours if you switch 
-on the `parse_geometries` option in the [config.py](config.py).
+Parses the original BAG file and transforms it into a SQLite database. Takes about 40 minutes to complete, or double 
+that if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py) ###
-Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 30 seconds.
+Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 15 seconds.
 
 ### [export_to_csv.py](export_to_csv.py) ###
 Exports the addresses in SQLite database to a *.csv file including additional information, like year of construction, 
-latitude, longitude, floor area and intended use of buildings. Takes about 75 seconds.
+latitude, longitude, floor area and intended use of buildings. Takes about 40 seconds.
 
 ### [export_to_csv_pc4.py](export_to_csv_pc4.py), [export_to_csv_pc5.py](export_to_csv_pc5.py), [export_to_csv_pc6.py](export_to_csv_pc6.py) ###
 Exports the postal codes (truncated to 4, 5 or all 6 characters respectively) in SQLite database to a *.csv file including number of addresses and average lat/lon of addresses in that zone. Takes several seconds.
