@@ -12,19 +12,19 @@ class Exporter:
         self.database = DatabaseSqlite()
         self.total_adressen = 0
 
-    def __export_to_csv(self, output_filename, headers, sql):
+    def __export_to_csv(self, output_filename, headers, sql, update_status=True):
         status = StatusUpdater()
 
-        utils.print_log(f"start: export adressen naar csv")
+        utils.print_log(f"start: export adressen naar csv file '{output_filename}'")
         self.database.check_valid_database()
 
         file = open(output_filename, 'w', newline='', encoding='utf-8')
         writer = csv.writer(file)
 
-        total_adressen = self.database.fetchone("SELECT COUNT(*) FROM adressen;")
-        utils.print_log(f"Totaal aantal adressen: {total_adressen}")
-
-        status.start(total_adressen)
+        if update_status:
+            total_adressen = self.database.fetchone("SELECT COUNT(*) FROM adressen;")
+            utils.print_log(f"Totaal aantal adressen: {total_adressen}")
+            status.start(total_adressen)
 
         writer.writerow(headers)
 
@@ -32,11 +32,13 @@ class Exporter:
         self.database.cursor.execute(sql)
         for row in self.database.cursor:
             count += 1
-            status.update(count)
+            if update_status:
+                status.update(count)
             writer.writerow(row)
             # if count > 10000: break  # Debug speedup
 
-        status.ready()
+        if update_status:
+            status.ready()
         utils.print_log(f"ready: export naar csv")
 
     def export_to_csv(self, output_filename):
@@ -83,57 +85,53 @@ class Exporter:
 
         self.__export_to_csv(output_filename, headers, sql)
 
-    def export_to_csv_pc6(self, output_filename):
-      headers = ['pc6', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+    def export_to_csv_postcode4_stats(self, output_filename):
+        headers = ['postcode4', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
 
-      # TODO add some more useful aggregates here?
-      sql = """
+        sql = """
           SELECT
-            a.postcode as pc6,
-            avg(a.latitude) as center_lat,
-            avg(a.longitude) as center_lon,
-            count(1) as aantal_adressen,
-            w.naam                       AS woonplaats
+            SUBSTR(a.postcode, 0, 5) AS pc4,
+            AVG(a.latitude)          AS center_lat,
+            AVG(a.longitude)         AS center_lon,
+            COUNT(1)                 AS aantal_adressen,
+            w.naam                   AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
-          WHERE a.postcode is not ""
-          GROUP BY pc6; """
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
+          WHERE a.postcode <> ''
+          GROUP BY pc4;"""
 
-      self.__export_to_csv(output_filename, headers, sql)
+        self.__export_to_csv(output_filename, headers, sql, False)
 
-    def export_to_csv_pc5(self, output_filename):
-      headers = ['pc5', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+    def export_to_csv_postcode5_stats(self, output_filename):
+        headers = ['postcode5', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
 
-      # TODO add some more useful aggregates here?
-      sql = """
+        sql = """
           SELECT
-            substr(a.postcode,0,6) as pc5,
-            avg(a.latitude) as center_lat,
-            avg(a.longitude) as center_lon,
-            count(1) as aantal_adressen,
-            w.naam                       AS woonplaats
+            SUBSTR(a.postcode, 0, 6) AS pc5,
+            AVG(a.latitude)          AS center_lat,
+            AVG(a.longitude)         AS center_lon,
+            COUNT(1)                 AS aantal_adressen,
+            w.naam                   AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
-          WHERE a.postcode is not ""
-          GROUP BY pc5; """
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
+          WHERE a.postcode <> ''
+          GROUP BY pc5;"""
 
-      self.__export_to_csv(output_filename, headers, sql)
+        self.__export_to_csv(output_filename, headers, sql, False)
 
-    def export_to_csv_pc4(self, output_filename):
-      headers = ['pc4', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
+    def export_to_csv_postcode6_stats(self, output_filename):
+        headers = ['postcode6', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
 
-      # TODO add some more useful aggregates here?
-      sql = """
+        sql = """
           SELECT
-            substr(a.postcode,0,5) as pc4,
-            avg(a.latitude) as center_lat,
-            avg(a.longitude) as center_lon,
-            count(1) as aantal_adressen,
-            w.naam                       AS woonplaats
+            a.postcode       AS pc6,
+            AVG(a.latitude)  AS center_lat,
+            AVG(a.longitude) AS center_lon,
+            COUNT(1)         AS aantal_adressen,
+            w.naam           AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
-          WHERE a.postcode is not ""
-          GROUP BY pc4; """
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
+          WHERE a.postcode <> ''
+          GROUP BY pc6;"""
 
-      self.__export_to_csv(output_filename, headers, sql)
-
+        self.__export_to_csv(output_filename, headers, sql, False)
