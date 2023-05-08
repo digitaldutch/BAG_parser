@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 import zipfile
 import utils
 import config
@@ -8,6 +9,7 @@ from bag.bag_parser import BagParser
 from bag.gemeente_parser import GemeentenParser
 
 utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
+utils.print_log(f"Python version {platform.python_version()}")
 
 if not os.path.exists(config.file_bag):
     sys.exit('BAG file not found. See readme.MD')
