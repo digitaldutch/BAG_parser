@@ -61,20 +61,23 @@ class DatabaseSqlite:
             data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
         else:
             data["naam"] = data["lange_naam"]
+        # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
-            "INSERT INTO openbare_ruimten (id, naam, lange_naam, verkorte_naam, type, woonplaats_id) "
-            "VALUES(?, ?, ?, ?, ?, ?)",
+            """REPLACE INTO openbare_ruimten (id, naam, lange_naam, verkorte_naam, type, woonplaats_id)
+              VALUES(?, ?, ?, ?, ?, ?);
+            """,
             (data["id"], data["naam"], data["lange_naam"], data["verkorte_naam"], data["type"], data["woonplaats_id"]))
 
     def save_nummer(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, openbareruimte_id,
-             status) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+             status) VALUES(?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (data["id"], data["postcode"], data["huisnummer"], data["huisletter"], data["toevoeging"],
              data["woonplaats_id"], data["openbareruimte_id"], data["status"])
         )
+
 
     def save_pand(self, data):
         # Note: Use replace, because BAG does not always contain unique id's
