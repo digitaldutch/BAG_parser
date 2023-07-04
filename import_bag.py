@@ -47,7 +47,6 @@ utils.print_log('create indices')
 db_sqlite.create_indices_bag()
 
 if config. create_adressen_table:
-    utils.print_log('create adressen tabel')
     db_sqlite.create_adressen_from_bag()
     db_sqlite.adressen_fix_bag_errors()
     db_sqlite.test_bag_adressen()

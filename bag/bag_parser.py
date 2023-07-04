@@ -46,7 +46,7 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999WPL"
-            self.total_xml = 3889  # required for progress indicator. Actual numbers can be found in the console or log.
+            self.total_xml = 4049  # required for progress indicator. Actual numbers can be found in the console or log.
             self.data_init = {'geometry': ''}
             self.save_to_database = self.__save_woonplaats
             self.db_fields = {
@@ -65,7 +65,7 @@ class BagParser:
 
             self.object_tag_name = ns_gwr_product + tag_name
             self.file_bag_code = "GEM-WPL-RELATIE"
-            self.total_xml = 5765  # required for progress indicator
+            self.total_xml = 5773  # required for progress indicator
             self.save_to_database = self.__save_gemeente_woonplaats
 
             self.db_fields = {
@@ -86,9 +86,9 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999OPR"
-            self.total_xml = 343448  # required for progress indicator
+            self.total_xml = 346970  # required for progress indicator
             self.data_init = {'verkorte_naam': ''}
-            self.save_to_database = self.__save_openbareruimte
+            self.save_to_database = self.__save_openbare_ruimte
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -109,7 +109,7 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999NUM"
-            self.total_xml = 12054045  # required for progress indicator
+            self.total_xml = 12287165  # required for progress indicator
             # Initialization required as BAG leaves fields out of the data if it is empty
             self.data_init = {'huisletter': '', 'toevoeging': '', 'postcode': '', 'woonplaats_id': ''}
             self.save_to_database = self.__save_nummer
@@ -123,7 +123,7 @@ class BagParser:
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
-                ns_objecten_ref + 'OpenbareRuimteRef': 'openbareruimte_id',
+                ns_objecten_ref + 'OpenbareRuimteRef': 'openbare_ruimte_id',
                 ns_objecten_ref + 'WoonplaatsRef': 'woonplaats_id',
             }
             self.db_tag_parent_fields = {}
@@ -134,7 +134,7 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999PND"
-            self.total_xml = 20352252  # required for progress indicator
+            self.total_xml = 21286109  # required for progress indicator
             self.data_init = {'geometry': ''}
             self.save_to_database = self.__save_pand
 
@@ -157,8 +157,8 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999VBO"
-            self.total_xml = 21148447  # required for progress indicator
-            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': ''}
+            self.total_xml = 22552963  # required for progress indicator
+            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'nevenadressen': ''}
             self.save_to_database = self.__save_verblijfsobject
 
             self.db_fields = {
@@ -175,6 +175,7 @@ class BagParser:
             # Therefore, identification is done by combining the tag with the parent tag
             self.db_tag_parent_fields = {
                 ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
+                ns_objecten + 'heeftAlsNevenadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nevenadressen',
             }
         elif self.tag_name == 'Ligplaats':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
@@ -184,7 +185,7 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999LIG"
-            self.total_xml = 17653  # required for progress indicator
+            self.total_xml = 18131  # required for progress indicator
             self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_ligplaats
 
@@ -210,7 +211,7 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999STA"
-            self.total_xml = 49543  # required for progress indicator
+            self.total_xml = 56684  # required for progress indicator
             self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
             self.save_to_database = self.__save_standplaats
 
@@ -279,13 +280,14 @@ class BagParser:
 
     def __parse_file(self, file_xml):
         data = self.data_init.copy()
-        tag_previous = None
-        tag_now = None
+        parent_tags = []
+
         for event, elem in ElementTree.iterparse(file_xml, events=("start", "end")):
             if event == 'start':
-                tag_previous = tag_now
-                tag_now = elem.tag
+                parent_tags.append(elem.tag)
             elif event == 'end':
+                parent_tags.pop()
+
                 # Note: elem.text is only guaranteed in 'end' event
                 if elem.tag == self.object_tag_name:
                     self.count_xml += 1
@@ -295,11 +297,14 @@ class BagParser:
                 else:
                     field_found = False
 
-                    if self.db_tag_parent_fields and tag_previous:
-                        parent_elem_tag = tag_previous + elem.tag
+                    if self.db_tag_parent_fields and parent_tags:
+                        parent_elem_tag = parent_tags[-1] + elem.tag
                         field_parent_elem = self.db_tag_parent_fields.get(parent_elem_tag)
                         if field_parent_elem:
-                            data[field_parent_elem] = elem.text
+                            if field_parent_elem in data and data[field_parent_elem]:
+                                data[field_parent_elem] += "," + elem.text
+                            else:
+                                data[field_parent_elem] = elem.text
                             field_found = True
 
                     if not field_found:
@@ -322,7 +327,7 @@ class BagParser:
             self.__update_status()
             self.database.save_gemeente_woonplaats(data)
 
-    def __save_openbareruimte(self, data):
+    def __save_openbare_ruimte(self, data):
         if (self.__bag_einddatum_valid(data) and
                 self.__bag_begindatum_valid(data) and
                 data['status'] == "Naamgeving uitgegeven"):
