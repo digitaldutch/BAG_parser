@@ -1,7 +1,12 @@
+import math
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 import os
 import shutil
 import sys
+from zipfile import ZipFile
+
 from logger import Logger
 from bag import rijksdriehoek
 from enum import Enum
@@ -23,13 +28,48 @@ class TextStyle(Enum):
 logger = Logger()
 
 
+def unzip_files(zip_filename, filenames, path):
+    with ZipFile(zip_filename, 'r') as file_zip:
+        for filename in filenames:
+            file_zip.extract(filename, path)
+
+
+def unzip_files_multi(zip_filename, path, workers_count=multiprocessing.cpu_count()):
+
+    with ZipFile(zip_filename, 'r') as archive:
+        files = archive.namelist()
+        files_total = len(files)
+
+    # It makes no sense to have:
+    # - more workers than logical CPU cores
+    # - more workers than jobs
+    cpu_count = multiprocessing.cpu_count()
+    workers_count = min([workers_count, cpu_count, files_total])
+
+    # use ceil instead of round to prevent zero batch size
+    batch_size = math.ceil(files_total / workers_count)
+
+    with ProcessPoolExecutor(workers_count) as executor:
+        for i in range(0, files_total, batch_size):
+            filenames = files[i:(i + batch_size)]
+            _ = executor.submit(unzip_files, zip_filename, filenames, path)
+
+
+def clear_log():
+    logger.clear()
+
+
 def print_log(message, error=False):
     now = datetime.now()
-    if error: message += ' | TEST FAILED'
+
+    if error:
+        message += ' | TEST FAILED'
+
     text = now.strftime("%Y-%m-%d %H:%M:%S.%f") + ' ' + message
     text_console = text
     if error:
         text_console = TextStyle.RED.value + text + TextStyle.RESET.value
+
     print(text_console)
     logger.log(text)
 

@@ -259,8 +259,7 @@ class BagParser:
         file_zip = utils.find_file('temp', self.file_bag_code, 'zip')
 
         utils.print_log('unzip ' + file_zip)
-        with zipfile.ZipFile(file_zip, 'r') as file_zip:
-            file_zip.extractall(self.folder_temp_xml)
+        utils.unzip_files_multi(file_zip, self.folder_temp_xml)
 
     def __update_status(self, final=False):
         if (final or
