@@ -4,6 +4,7 @@ import locale
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
+
 class StatusUpdater:
     last_update_time = None
     start_time = None
@@ -15,28 +16,32 @@ class StatusUpdater:
     def __init__(self):
         pass
 
-    def start(self, total_count=0):
+    def start(self, total_count, label=''):
         self.last_update_time = None
         self.elapsed_time = None
         self.count = 0
         self.total_count = total_count
+        self.label = label
         self.start_time = time.perf_counter()
+        self.__update_bar(False)
 
-    def __update_bar(self, count, final):
+    def __update_bar(self, final):
         self.last_update_time = time.perf_counter()
         self.elapsed_time = self.last_update_time - self.start_time
         count_per_second = round(self.count / self.elapsed_time)
 
-        text = f'{self.elapsed_time:.1f}s | {self.count:n}/{self.total_count:n} (per second: {count_per_second:n})'
+        text = f'{self.elapsed_time:.1f}s | ' \
+               f'{self.label} {self.count:n}/{self.total_count:n} (per second: {count_per_second:n})'
 
-        total_count = self.total_count if (self.total_count > 0) else count
-        utils.print_progress_bar(count, total_count, text, final)
+        total_count = self.total_count if (self.total_count > 0) else self.count
+        utils.print_progress_bar(self.count, total_count, text, final)
 
     def update(self, count):
-        self.count += 1
+        self.count = count
         if ((self.last_update_time is None) or
                 (time.perf_counter() - self.last_update_time > self.refresh_time)):
-            self.__update_bar(count, False)
+            self.__update_bar(False)
 
     def ready(self):
-        self.__update_bar(self.count, True)
+        self.count = self.total_count
+        self.__update_bar(True)

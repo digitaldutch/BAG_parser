@@ -4,9 +4,9 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Converts big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen en Gebouwen) into 
-a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
-No need to install any dependencies or a database server. 
+Converts in 10 minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
+en Gebouwen) into a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
+No need to install any dependencies or a database server.
 
 Additional scripts will convert this SQLite database to other formats, like CSV. 
 
@@ -47,8 +47,8 @@ Update parser:
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Set your options in [config.py](config.py)
 * Run `import_bag.py`
-* Drink cocktails for 35 minutes 🌴🍹😎 while watching the progress bar.
-* Open the SQLite database with your favorite adminstration tool. I like [DBeaver](https://dbeaver.io/).
+* Drink a cup of coffee for 10 minutes ☕😎 while watching the progress bar.
+* Open the SQLite database with your favorite tool. I like [DBeaver](https://dbeaver.io/).
 Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
 SELECT
@@ -70,7 +70,7 @@ SELECT
 FROM adressen a
   LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
   LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
-  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
+  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id
   LEFT JOIN provincies p       ON g.provincie_id       = p.id
 WHERE postcode = '2514GL'
   AND huisnummer = 68;
@@ -82,7 +82,7 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into a SQLite database. Takes about 35 minutes to complete, or double 
+Parses the original BAG file and transforms it into a SQLite database. Takes about 10 minutes to complete, or double 
 that if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py)
@@ -108,10 +108,9 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 
 
 ## Limitations 
-* Only active addresses are included. History data is left out.
-* Probably several more things that I forgot. Let me know by filing a GitHub issue.
 * The WGS84 coordinates are calculated using [approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees](docs/Benaderingsformules_RD_WGS.pdf). This conversion has an error of a few decimeters. Don't use the 
 WGS84 coordinates if you need higher accuracy. 
+* Probably several more things that I forgot. Let me know by filing a GitHub issue.
 
 ## Other tools 
 

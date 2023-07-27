@@ -11,7 +11,7 @@ from bag.gemeente_parser import GemeentenParser
 def main():
     utils.clear_log()
     utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
-    utils.print_log(f"BAG parser version {config.version} | {config.version_date}")
+    utils.print_log(f"BAG parser version {config.version} | {config.version_date} | {config.cpu_cores_used} CPU cores")
     utils.print_log(f"Python version {platform.python_version()}")
 
     if not os.path.exists(config.file_bag):
@@ -25,7 +25,7 @@ def main():
         os.makedirs(temp_folder_name)
     utils.empty_folder(temp_folder_name)
 
-    utils.unzip_files_multi(config.file_bag, temp_folder_name)
+    utils.unzip_files_multithreaded(config.file_bag, temp_folder_name)
 
     db_sqlite = DatabaseSqlite()
 
@@ -51,17 +51,21 @@ def main():
     utils.print_log('create indices')
     db_sqlite.create_indices_bag()
 
-    if config.create_adressen_table:
-        db_sqlite.create_adressen_from_bag()
-        db_sqlite.adressen_fix_bag_errors()
-        db_sqlite.test_bag_adressen()
+    b_parser.add_gemeenten_into_woonplaatsen()
 
-        if config.delete_no_longer_needed_bag_tables:
-            utils.print_log('delete no longer needed BAG tables')
-            db_sqlite.delete_no_longer_needed_bag_tables()
+    if config.create_adressen_table:
+        if not config.active_only:
+            utils.print_log('addresses table is only created if active_only=True in config', True)
+        else:
+            db_sqlite.create_adressen_from_bag()
+            db_sqlite.adressen_fix_bag_errors()
+            db_sqlite.test_bag_adressen()
+
+            if config.delete_no_longer_needed_bag_tables:
+                utils.print_log('delete no longer needed BAG tables')
+                db_sqlite.delete_no_longer_needed_bag_tables()
 
     utils.print_log('cleaning up: vacuum')
-    db_sqlite.commit()
     db_sqlite.vacuum()
 
     utils.empty_folder(temp_folder_name)

@@ -34,7 +34,7 @@ def unzip_files(zip_filename, filenames, path):
             file_zip.extract(filename, path)
 
 
-def unzip_files_multi(zip_filename, path, workers_count=multiprocessing.cpu_count()):
+def unzip_files_multithreaded(zip_filename, path, workers_count=multiprocessing.cpu_count()):
 
     with ZipFile(zip_filename, 'r') as archive:
         files = archive.namelist()
@@ -63,7 +63,7 @@ def print_log(message, error=False):
     now = datetime.now()
 
     if error:
-        message += ' | TEST FAILED'
+        message = 'ERROR: ' + message
 
     text = now.strftime("%Y-%m-%d %H:%M:%S.%f") + ' ' + message
     text_console = text
@@ -102,7 +102,6 @@ def empty_folder(folder):
 
 
 def print_progress_bar(i, max_value, text, final=False):
-    # size of progress bar
     bar_length = 10
     progress = i / max_value
     sys.stdout.write('\r')
@@ -118,6 +117,8 @@ def bag_date_to_date(bag_date):
     else:
         return None
 
+def bag_date_today():
+    return datetime.today().strftime("%Y-%m-%d")
 
 def bag_geometry_to_wgs_geojson(coordinates_rd):
     coordinates_rd = coordinates_rd.split()

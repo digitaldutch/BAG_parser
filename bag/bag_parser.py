@@ -1,15 +1,173 @@
 # BAG XML parser
-
+import math
 import os
 import time
-import zipfile
-from _datetime import datetime
+from concurrent.futures import ProcessPoolExecutor, wait
 from xml.etree import ElementTree
 import config
-from bag import rijksdriehoek
 
 import utils
+from bag import rijksdriehoek
+from database_sqlite import DatabaseSqlite
+from statusbar import StatusUpdater
 
+
+# def parse_xml_files(files_xml, data_init, object_tag_name, db_fields, db_tag_parent_fields):
+#     for file in files_xml:
+#         parse_xml_file(file, data_init, object_tag_name, db_fields, db_tag_parent_fields)
+
+
+def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_tag_parent_fields):
+    today_string = utils.bag_date_today()
+
+    def bag_begindatum_valid(data):
+        datum = data.get('begindatum_geldigheid')
+        if datum:
+            datum = datum[0:10]
+            # string date compare is quicker than converting to date types
+            return datum <= today_string
+        else:
+            return False
+
+    def bag_einddatum_valid(data):
+        datum = data.get('einddatum_geldigheid')
+        if datum:
+            datum = datum[0:10]
+            # string date compare is quicker than converting to date types
+            return datum >= today_string
+        else:
+            return True
+            # No einddatum means valid
+
+    def data_active(data):
+        status_ok = (not status_active) or (data['status'] == status_active)
+        return status_ok and bag_begindatum_valid(data) and bag_einddatum_valid(data)
+
+    db_sqlite = DatabaseSqlite()
+    data = data_init.copy()
+    coordinates_field = None
+    has_geometry = False
+    status_active = None
+    # Cache data in memory to perform saving to SQLite in a single loop. SQLite is not good at threading, so
+    # it needs to perform as quickly as possible
+    db_data = []
+    parent_tags = []
+    xml_count = 0
+
+    match tag_name:
+        case 'Woonplaats':
+            status_active = 'Woonplaats aangewezen'
+            has_geometry = True
+            save_function = db_sqlite.save_woonplaats
+        case 'GemeenteWoonplaatsRelatie':
+            save_function = db_sqlite.save_gemeente_woonplaats
+        case 'OpenbareRuimte':
+            status_active = 'Naamgeving uitgegeven'
+            save_function = db_sqlite.save_openbare_ruimte
+        case 'Nummeraanduiding':
+            status_active = 'Naamgeving uitgegeven'
+            save_function = db_sqlite.save_nummer
+        case 'Pand':
+            save_function = db_sqlite.save_pand
+        case 'Verblijfsobject':
+            coordinates_field = 'pos'
+            has_geometry = True
+            save_function = db_sqlite.save_verblijfsobject
+        case 'Ligplaats':
+            coordinates_field = 'geometry'
+            has_geometry = True
+            save_function = db_sqlite.save_ligplaats
+        case 'Standplaats':
+            coordinates_field = 'geometry'
+            has_geometry = True
+            save_function = db_sqlite.save_standplaats
+        case _:
+            raise Exception(f'No save function found for tag_name "{tag_name}"')
+
+    # Parse XML to data
+    for event, elem in ElementTree.iterparse(file_xml, events=("start", "end")):
+        if event == 'start':
+            parent_tags.append(elem.tag)
+        elif event == 'end':
+            parent_tags.pop()
+
+            # Note: elem.text is only guaranteed in 'end' event
+            if elem.tag == object_tag_name:
+                xml_count += 1
+                db_data.append(data)
+                data = data_init.copy()
+            else:
+                field_found = False
+
+                if db_tag_parent_fields and parent_tags:
+                    parent_elem_tag = parent_tags[-1] + elem.tag
+                    field_parent_elem = db_tag_parent_fields.get(parent_elem_tag)
+                    if field_parent_elem:
+                        if field_parent_elem in data and data[field_parent_elem]:
+                            data[field_parent_elem] += "," + elem.text
+                        else:
+                            data[field_parent_elem] = elem.text
+                        field_found = True
+
+                if not field_found:
+                    field = db_fields.get(elem.tag)
+                    if field:
+                        data[field] = elem.text
+
+    if config.active_only:
+        db_data = list(filter(lambda d: data_active(d), db_data))
+
+    if coordinates_field is not None:
+        db_data = add_coordinates(db_data, coordinates_field)
+
+    if has_geometry:
+        if config.parse_geometries:
+            db_data = geometry_to_wgs84(db_data)
+        else:
+            db_data = geometry_to_empty(db_data)
+
+    # Save data to SQLite
+    for db_row in db_data:
+        save_function(db_row)
+
+    db_sqlite.commit()
+
+    return xml_count
+
+
+def geometry_to_wgs84(rows):
+    for i, row in enumerate(rows):
+        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
+
+    return rows
+
+
+def geometry_to_empty(rows):
+    for i, row in enumerate(rows):
+        row['geometry'] = ''
+
+    return rows
+
+
+def add_coordinates(rows, field_name):
+    for i, row in enumerate(rows):
+        if row[field_name]:
+            [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(row[field_name])
+            [row["latitude"], row["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(row["rd_x"], row["rd_y"])
+
+    return rows
+
+
+# def convert_lon_lat(records):
+#     new_data = []
+#     for row in records:
+#         [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(row['geometry'])
+#     [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
+#
+#     new_geometry = utils.bag_geometry_to_wgs_geojson(row[1])
+#         new_data.append([new_geometry, row[0]])
+#
+#     return new_data
 
 class BagParser:
     gui_time = None
@@ -17,26 +175,23 @@ class BagParser:
 
     def __init__(self, database):
         self.database = database
-        self.count_db = 0
         self.count_xml = 0
         self.total_xml = None
         self.tag_name = None
         self.object_tag_name = None
         self.file_bag_code = None
-        self.save_to_database = None
         self.start_time = None
         self.db_fields = {}
         # sometimes the same object tag is used for multiple fields and the parent tag has to be taken into account
         self.db_tag_parent_fields = {}
-        self.today_string = datetime.today().strftime("%Y-%m-%d")
-        self.data_init = {}
+        self.today_string = utils.bag_date_today()
+        self.data_init = {'status': '', 'begindatum_geldigheid': '', 'einddatum_geldigheid': ''}
 
         if not os.path.exists(self.folder_temp_xml):
             os.makedirs(self.folder_temp_xml)
 
     def parse(self, tag_name):
         self.tag_name = tag_name
-        self.count_db = 0
         self.count_xml = 0
 
         if self.tag_name == 'Woonplaats':
@@ -47,8 +202,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999WPL"
             self.total_xml = 4049  # required for progress indicator. Actual numbers can be found in the console or log.
-            self.data_init = {'geometry': ''}
-            self.save_to_database = self.__save_woonplaats
+            self.data_init['geometry'] = ''
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
                 ns_objecten + 'naam': 'naam',
@@ -66,11 +220,11 @@ class BagParser:
             self.object_tag_name = ns_gwr_product + tag_name
             self.file_bag_code = "GEM-WPL-RELATIE"
             self.total_xml = 5773  # required for progress indicator
-            self.save_to_database = self.__save_gemeente_woonplaats
 
             self.db_fields = {
                 ns_bagtypes + 'begindatumTijdvakGeldigheid': 'begindatum_geldigheid',
                 ns_bagtypes + 'einddatumTijdvakGeldigheid': 'einddatum_geldigheid',
+                ns_gwr_product + 'status': 'status',
             }
             # 'identificatie' is used for both woonplaats_id and gemeente_id.
             # Therefore, identification is done by combining the tag with the parent tag
@@ -87,8 +241,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999OPR"
             self.total_xml = 346970  # required for progress indicator
-            self.data_init = {'verkorte_naam': ''}
-            self.save_to_database = self.__save_openbare_ruimte
+            self.data_init['verkorte_naam'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -111,8 +264,10 @@ class BagParser:
             self.file_bag_code = "9999NUM"
             self.total_xml = 12287165  # required for progress indicator
             # Initialization required as BAG leaves fields out of the data if it is empty
-            self.data_init = {'huisletter': '', 'toevoeging': '', 'postcode': '', 'woonplaats_id': ''}
-            self.save_to_database = self.__save_nummer
+            self.data_init['huisletter'] = ''
+            self.data_init['toevoeging'] = ''
+            self.data_init['postcode'] = ''
+            self.data_init['woonplaats_id'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -135,8 +290,7 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999PND"
             self.total_xml = 21286109  # required for progress indicator
-            self.data_init = {'geometry': ''}
-            self.save_to_database = self.__save_pand
+            self.data_init['geometry'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -158,8 +312,12 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999VBO"
             self.total_xml = 22552963  # required for progress indicator
-            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'nevenadressen': ''}
-            self.save_to_database = self.__save_verblijfsobject
+            self.data_init['pos'] = ''
+            self.data_init['rd_x'] = ''
+            self.data_init['rd_y'] = ''
+            self.data_init['latitude'] = ''
+            self.data_init['longitude'] = ''
+            self.data_init['nevenadressen'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -186,8 +344,12 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999LIG"
             self.total_xml = 18131  # required for progress indicator
-            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
-            self.save_to_database = self.__save_ligplaats
+            self.data_init['pos'] = ''
+            self.data_init['rd_x'] = ''
+            self.data_init['rd_y'] = ''
+            self.data_init['latitude'] = ''
+            self.data_init['longitude'] = ''
+            self.data_init['geometry'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -212,8 +374,12 @@ class BagParser:
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999STA"
             self.total_xml = 56684  # required for progress indicator
-            self.data_init = {'pos': '', 'rd_x': '', 'rd_y': '', 'latitude': '', 'longitude': '', 'geometry': ''}
-            self.save_to_database = self.__save_standplaats
+            self.data_init['pos'] = ''
+            self.data_init['rd_x'] = ''
+            self.data_init['rd_y'] = ''
+            self.data_init['latitude'] = ''
+            self.data_init['longitude'] = ''
+            self.data_init['geometry'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -236,20 +402,12 @@ class BagParser:
         self.__unzip_xml()
 
         utils.print_log('convert XML files to SQLite')
-
-        xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
-
-        self.start_time = time.perf_counter()
-
-        for file_xml in xml_files:
-            self.__parse_file(file_xml)
+        self.__parse_xml_files()
 
         self.database.commit()
 
-        self.__update_status(True)
-
         utils.print_log(f'ready: parse XML {self.tag_name} | {self.elapsed_time:.2f}s '
-                        f'| XML/DB: {str(self.count_xml)}/{str(self.count_db)}')
+                        f'| XML total: {self.count_xml:,d}')
 
         utils.empty_folder(self.folder_temp_xml)
 
@@ -259,7 +417,49 @@ class BagParser:
         file_zip = utils.find_file('temp', self.file_bag_code, 'zip')
 
         utils.print_log('unzip ' + file_zip)
-        utils.unzip_files_multi(file_zip, self.folder_temp_xml)
+        utils.unzip_files_multithreaded(file_zip, self.folder_temp_xml)
+
+    def __parse_xml_files(self):
+        xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
+        files_total = len(xml_files)
+
+        self.start_time = time.perf_counter()
+
+        workers_count = config.cpu_cores_used
+
+        futures = []
+        # Multi-threading and batch
+        # use ceil instead of round to prevent zero batch size
+        batch_size = math.ceil(files_total / workers_count)
+        # with ProcessPoolExecutor(1) as pool:
+        #     for i in range(0, files_total, batch_size):
+        #         filenames = xml_files[i:(i + batch_size)]
+        #         future = pool.submit(parse_xml_files, filenames, self.data_init, self.object_tag_name, self.db_fields,
+        #                              self.db_tag_parent_fields)
+        #         futures.append(future)
+
+        # Multi-threading. One XML file per executor.
+        pool = ProcessPoolExecutor(workers_count)
+        for file_xml in xml_files:
+            future = pool.submit(parse_xml_file, file_xml, self.tag_name, self.data_init, self.object_tag_name,
+                                 self.db_fields,
+                                 self.db_tag_parent_fields)
+            futures.append(future)
+
+        for future in futures:
+            count_file_xml = future.result()
+            self.count_xml += count_file_xml
+            self.__update_status()
+
+        wait(futures)
+
+        self.__update_status(True)
+
+    def add_gemeenten_into_woonplaatsen(self):
+        if (not config.active_only):
+            utils.print_log('gemeente_id is only added to woonplaatsen if active_only=True in config', True)
+            return
+        self.database.add_gemeenten_to_woonplaatsen()
 
     def __update_status(self, final=False):
         if (final or
@@ -269,141 +469,9 @@ class BagParser:
             self.gui_time = time.perf_counter()
             self.elapsed_time = self.gui_time - self.start_time
             tags_per_second = round(self.count_xml / self.elapsed_time)
-            db_per_second = round(self.count_db / self.elapsed_time)
             text = " {:.1f}s".format(self.elapsed_time) + \
-                   " | XML/DB: " + str(self.count_xml) + "/" + str(self.count_db) + \
-                   " | per second XML/DB: " + str(tags_per_second) + "/" + str(db_per_second)
+                   " | XML total/per second: {:,d}".format(self.count_xml) + \
+                   "/{:,d}".format(tags_per_second)
             if self.count_xml > self.total_xml:
                 self.total_xml = self.count_xml
             utils.print_progress_bar(self.count_xml, self.total_xml, text, final)
-
-    def __parse_file(self, file_xml):
-        data = self.data_init.copy()
-        parent_tags = []
-
-        for event, elem in ElementTree.iterparse(file_xml, events=("start", "end")):
-            if event == 'start':
-                parent_tags.append(elem.tag)
-            elif event == 'end':
-                parent_tags.pop()
-
-                # Note: elem.text is only guaranteed in 'end' event
-                if elem.tag == self.object_tag_name:
-                    self.count_xml += 1
-                    self.save_to_database(data)
-                    data = self.data_init.copy()
-                    self.__update_status()
-                else:
-                    field_found = False
-
-                    if self.db_tag_parent_fields and parent_tags:
-                        parent_elem_tag = parent_tags[-1] + elem.tag
-                        field_parent_elem = self.db_tag_parent_fields.get(parent_elem_tag)
-                        if field_parent_elem:
-                            if field_parent_elem in data and data[field_parent_elem]:
-                                data[field_parent_elem] += "," + elem.text
-                            else:
-                                data[field_parent_elem] = elem.text
-                            field_found = True
-
-                    if not field_found:
-                        field = self.db_fields.get(elem.tag)
-                        if field:
-                            data[field] = elem.text
-
-    def __save_woonplaats(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                data['status'] == "Woonplaats aangewezen"):
-            self.count_db += 1
-            if data['geometry']:
-                data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
-            self.__update_status()
-            self.database.save_woonplaats(data)
-
-    def __save_gemeente_woonplaats(self, data):
-        if self.__bag_einddatum_valid(data) and self.__bag_begindatum_valid(data):
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_gemeente_woonplaats(data)
-
-    def __save_openbare_ruimte(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data) and
-                data['status'] == "Naamgeving uitgegeven"):
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_openbare_ruimte(data)
-
-    def __save_nummer(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data) and
-                data['status'] == "Naamgeving uitgegeven"):
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_nummer(data)
-
-    def __save_pand(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data)):
-            self.count_db += 1
-            if data['geometry']:
-                data["geometry"] = utils.bag_geometry_3d_to_wgs_geojson(data['geometry'])
-            self.__update_status()
-            self.database.save_pand(data)
-
-    def __save_verblijfsobject(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data)):
-            if data['pos']:
-                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['pos'])
-                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_verblijfsobject(data)
-
-    def __save_ligplaats(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data)):
-            if data['geometry']:
-                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
-                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-                if config.parse_geometries:
-                    data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
-                else:
-                    data["geometry"] = ''
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_ligplaats(data)
-
-    def __save_standplaats(self, data):
-        if (self.__bag_einddatum_valid(data) and
-                self.__bag_begindatum_valid(data)):
-            if data['geometry']:
-                [data["rd_x"], data["rd_y"]] = utils.bag_pos_to_rd_coordinates(data['geometry'])
-                [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-                if config.parse_geometries:
-                    data["geometry"] = utils.bag_geometry_to_wgs_geojson(data['geometry'])
-                else:
-                    data["geometry"] = ''
-            self.count_db += 1
-            self.__update_status()
-            self.database.save_standplaats(data)
-
-    def __bag_begindatum_valid(self, data):
-        datum = data.get('begindatum_geldigheid')
-        if datum:
-            datum = datum[0:10]
-            # string date compare is quicker than converting to date types
-            return datum <= self.today_string
-        else:
-            return False
-
-    def __bag_einddatum_valid(self, data):
-        datum = data.get('einddatum_geldigheid')
-        if datum:
-            datum = datum[0:10]
-            # string date compare is quicker than converting to date types
-            return datum >= self.today_string
-        else:
-            # No einddatum means valid
-            return True
