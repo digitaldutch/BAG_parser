@@ -112,7 +112,10 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                 if not field_found:
                     field = db_fields.get(elem.tag)
                     if field:
-                        data[field] = elem.text
+                        if field in data and data[field]:
+                            data[field] += "," + elem.text
+                        else:
+                            data[field] = elem.text
 
     if config.active_only:
         db_data = list(filter(lambda d: data_active(d), db_data))
@@ -318,6 +321,7 @@ class BagParser:
             self.data_init['latitude'] = ''
             self.data_init['longitude'] = ''
             self.data_init['nevenadressen'] = ''
+            self.data_init['gebruiksdoel'] = ''
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
