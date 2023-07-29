@@ -4,7 +4,7 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Converts in 10 minutes (AMD 7700X) the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
+Converts in a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
 en Gebouwen) into a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
 No need to install any dependencies or a database server.
 
@@ -47,7 +47,7 @@ Update parser:
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Set your options in [config.py](config.py)
 * Run `import_bag.py`
-* Drink a cup of coffee for 10 minutes (AMD 7700X) ☕😎 while watching the progress bar.
+* Drink a cup of coffee for a few minutes ☕😎 while watching the progress bar.
 * Open the SQLite database with your favorite tool. I like [DBeaver](https://dbeaver.io/).
 Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
@@ -82,8 +82,8 @@ SQLite data into a live Firebird database.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into a SQLite database. Takes about 10 minutes to complete, or double 
-that if you switch on the `parse_geometries` option in the [config.py](config.py).
+Parses the original BAG file and transforms it into a SQLite database. Takes about 8 minutes and 30 seconds to complete
+on an AMD 7700X PC, or double that if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv_postcodes.py](export_to_csv_postcodes.py)
 Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 15 seconds.

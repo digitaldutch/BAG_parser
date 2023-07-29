@@ -111,6 +111,8 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                 if not field_found:
                     field = db_fields.get(elem.tag)
                     if field:
+                        if field == 'geometry':
+                            elem.text = '[' + elem.text + ']'
                         if field in data and data[field]:
                             data[field] += "," + elem.text
                         else:
@@ -151,10 +153,24 @@ def geometry_to_empty(rows):
     return rows
 
 
+def get_pos_from_geometry(data):
+    # geometry data looks like this: [111.111 222.222 333.333 444.444]
+    # Return string with first two numbers: 111.111 222.222
+    first_space = data.find(' ')
+    second_space = data.find(' ', first_space + 1)
+
+    return data[1:second_space]
+
+
 def add_coordinates(rows, field_name):
     for i, row in enumerate(rows):
         if row[field_name]:
-            [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(row[field_name])
+            if field_name == 'geometry':
+                pos = get_pos_from_geometry(row[field_name])
+            else:
+                pos = row[field_name]
+
+            [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(pos)
             [row["latitude"], row["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(row["rd_x"], row["rd_y"])
 
     return rows

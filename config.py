@@ -39,8 +39,8 @@ use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
 # The data is stored in polygon geojson format in the geometry field.
-# Parsing with geometries increases the run time from 1 to 2 hours.
-# And the database size will increase from 1.7GB to 16GB or 9GB if no longer needed tables are deleted.
+# And the database size will increase from 1.7GB to 16GB or 8GB if no longer needed tables are deleted.
+# Parsing will also take a few minutes more.
 parse_geometries = False
 
 # Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
