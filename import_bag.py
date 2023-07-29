@@ -48,7 +48,7 @@ def main():
     b_parser.parse('Ligplaats')
     b_parser.parse('Standplaats')
 
-    utils.print_log('create indices')
+    utils.print_log('create BAG table indices')
     db_sqlite.create_indices_bag()
 
     b_parser.add_gemeenten_into_woonplaatsen()

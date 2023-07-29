@@ -320,11 +320,11 @@ class DatabaseSqlite:
         utils.print_log('create adressen tabel: import woonplaatsen from nummers')
         self.adressen_update_woonplaatsen_from_nummers()
 
-        utils.print_log('create adressen tabel: update nevenadressen data')
-        self.adressen_update_nevenadressen()
-
         utils.print_log('create adressen tabel: create indices')
         self.create_indices_adressen()
+
+        utils.print_log('create adressen tabel: update nevenadressen data')
+        self.adressen_update_nevenadressen()
 
         self.connection.commit()
 
@@ -355,44 +355,60 @@ class DatabaseSqlite:
         """)
 
     def adressen_update_nevenadressen(self):
-        adressen = self.fetchall("SELECT nummer_id, nevenadressen FROM verblijfsobjecten WHERE nevenadressen <> ''")
-        for adres in adressen:
-            hoofd_nummer_id = adres[0]
-            neven_nummer_ids = ','.join(f"'{e.strip()}'" for e in adres[1].split(','))
-            sql = f"""
-                UPDATE adressen
-                SET
-                  hoofd_nummer_id = a2.nummer_id,
-                  pand_id = a2.pand_id,
-                  verblijfsobject_id = a2.verblijfsobject_id,
-                  gebruiksdoel = a2.gebruiksdoel,
-                  oppervlakte = a2.oppervlakte,
-                  rd_x = a2.rd_x,
-                  rd_y = a2.rd_y,
-                  latitude = a2.latitude,
-                  longitude = a2.longitude,
-                  bouwjaar = a2.bouwjaar,
-                  geometry = a2.geometry
-                FROM (
-                  SELECT
-                    nummer_id,
-                    pand_id,
-                    verblijfsobject_id,
-                    gebruiksdoel,
-                    oppervlakte,
-                    rd_x,
-                    rd_y,
-                    latitude,
-                    longitude,
-                    bouwjaar,
-                    geometry
-                    FROM adressen
-                    WHERE nummer_id = '{hoofd_nummer_id}') as a2
-                WHERE adressen.nummer_id IN ({neven_nummer_ids});                
-            """
-            self.connection.executescript(sql)
 
-        self.commit()
+        self.connection.executescript("""
+            DROP TABLE IF EXISTS nevenadressen;
+            
+            CREATE TEMP TABLE nevenadressen (
+            neven_nummer_id TEXT PRIMARY KEY,
+            hoofd_nummer_id TEXT
+        );""")
+
+        adressen = self.fetchall("SELECT nummer_id, nevenadressen FROM verblijfsobjecten WHERE nevenadressen <> ''")
+        parameters = []
+        for adres in adressen:
+            neven_nummer_ids = adres[1].split(',')
+            for neven_id in neven_nummer_ids:
+                parameters.append([adres[0], neven_id])
+
+        sql = "INSERT INTO nevenadressen (hoofd_nummer_id, neven_nummer_id) VALUES (?, ?)"
+        self.connection.executemany(sql, parameters)
+        self.connection.commit()
+
+        self.connection.executescript("""
+            UPDATE adressen SET
+                hoofd_nummer_id = n.hoofd_nummer_id,
+                pand_id = n.pand_id,
+                verblijfsobject_id = n.verblijfsobject_id,
+                gebruiksdoel = n.gebruiksdoel,
+                oppervlakte = n.oppervlakte,
+                rd_x = n.rd_x,
+                rd_y = n.rd_y,
+                latitude = n.latitude,
+                longitude = n.longitude,
+                bouwjaar = n.bouwjaar,
+                geometry = n.geometry
+            FROM (
+                SELECT
+                    nevenadressen.hoofd_nummer_id,
+                    nevenadressen.neven_nummer_id,
+                    adressen.pand_id,
+                    adressen.verblijfsobject_id,
+                    adressen.gebruiksdoel,
+                    adressen.oppervlakte,
+                    adressen.rd_x,
+                    adressen.rd_y,
+                    adressen.latitude,
+                    adressen.longitude,
+                    adressen.bouwjaar,
+                    adressen.geometry
+                FROM nevenadressen
+                LEFT JOIN adressen ON nevenadressen.hoofd_nummer_id = adressen.nummer_id
+                 ) AS n
+            WHERE n.neven_nummer_id = adressen.nummer_id;
+        """)
+
+
 
     # woonplaats_id in nummers overrule woonplaats_id van de openbare ruimte.
     def adressen_update_woonplaatsen_from_nummers(self):
@@ -402,6 +418,7 @@ class DatabaseSqlite:
             FROM (SELECT id, woonplaats_id FROM nummers WHERE woonplaats_id IS NOT '') AS n
             WHERE n.id = adressen.nummer_id;
         """)
+        self.commit()
 
     def delete_no_longer_needed_bag_tables(self):
         self.connection.executescript("""
