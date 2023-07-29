@@ -9,7 +9,6 @@ import config
 import utils
 from bag import rijksdriehoek
 from database_sqlite import DatabaseSqlite
-from statusbar import StatusUpdater
 
 
 # def parse_xml_files(files_xml, data_init, object_tag_name, db_fields, db_tag_parent_fields):
@@ -161,25 +160,15 @@ def add_coordinates(rows, field_name):
     return rows
 
 
-# def convert_lon_lat(records):
-#     new_data = []
-#     for row in records:
-#         [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(row['geometry'])
-#     [data["latitude"], data["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(data["rd_x"], data["rd_y"])
-#
-#     new_geometry = utils.bag_geometry_to_wgs_geojson(row[1])
-#         new_data.append([new_geometry, row[0]])
-#
-#     return new_data
-
 class BagParser:
     gui_time = None
     folder_temp_xml = "temp_xml"
 
     def __init__(self, database):
         self.database = database
-        self.count_xml = 0
-        self.total_xml = None
+        self.count_xml_tags = 0
+        self.count_xml_files = 0
+        self.total_xml_files = None
         self.tag_name = None
         self.object_tag_name = None
         self.file_bag_code = None
@@ -195,7 +184,7 @@ class BagParser:
 
     def parse(self, tag_name):
         self.tag_name = tag_name
-        self.count_xml = 0
+        self.count_xml_tags = 0
 
         if self.tag_name == 'Woonplaats':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
@@ -204,7 +193,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999WPL"
-            self.total_xml = 4049  # required for progress indicator. Actual numbers can be found in the console or log.
             self.data_init['geometry'] = ''
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
@@ -222,7 +210,6 @@ class BagParser:
 
             self.object_tag_name = ns_gwr_product + tag_name
             self.file_bag_code = "GEM-WPL-RELATIE"
-            self.total_xml = 5773  # required for progress indicator
 
             self.db_fields = {
                 ns_bagtypes + 'begindatumTijdvakGeldigheid': 'begindatum_geldigheid',
@@ -243,7 +230,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999OPR"
-            self.total_xml = 346970  # required for progress indicator
             self.data_init['verkorte_naam'] = ''
 
             self.db_fields = {
@@ -265,7 +251,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999NUM"
-            self.total_xml = 12287165  # required for progress indicator
             # Initialization required as BAG leaves fields out of the data if it is empty
             self.data_init['huisletter'] = ''
             self.data_init['toevoeging'] = ''
@@ -292,7 +277,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999PND"
-            self.total_xml = 21286109  # required for progress indicator
             self.data_init['geometry'] = ''
 
             self.db_fields = {
@@ -314,7 +298,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999VBO"
-            self.total_xml = 22552963  # required for progress indicator
             self.data_init['pos'] = ''
             self.data_init['rd_x'] = ''
             self.data_init['rd_y'] = ''
@@ -347,7 +330,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999LIG"
-            self.total_xml = 18131  # required for progress indicator
             self.data_init['pos'] = ''
             self.data_init['rd_x'] = ''
             self.data_init['rd_y'] = ''
@@ -377,7 +359,6 @@ class BagParser:
 
             self.object_tag_name = ns_objecten + tag_name
             self.file_bag_code = "9999STA"
-            self.total_xml = 56684  # required for progress indicator
             self.data_init['pos'] = ''
             self.data_init['rd_x'] = ''
             self.data_init['rd_y'] = ''
@@ -411,7 +392,7 @@ class BagParser:
         self.database.commit()
 
         utils.print_log(f'ready: parse XML {self.tag_name} | {self.elapsed_time:.2f}s '
-                        f'| XML total: {self.count_xml:,d}')
+                        f'| XML total: {self.count_xml_tags:,d}')
 
         utils.empty_folder(self.folder_temp_xml)
 
@@ -426,6 +407,8 @@ class BagParser:
     def __parse_xml_files(self):
         xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
         files_total = len(xml_files)
+        self.total_xml_files = files_total
+        self.count_xml_files = 0
 
         self.start_time = time.perf_counter()
 
@@ -452,12 +435,13 @@ class BagParser:
 
         for future in futures:
             count_file_xml = future.result()
-            self.count_xml += count_file_xml
-            self.__update_status()
+            self.count_xml_files += 1
+            self.count_xml_tags += count_file_xml
+            self.__update_xml_status()
 
         wait(futures)
 
-        self.__update_status(True)
+        self.__update_xml_status(True)
 
     def add_gemeenten_into_woonplaatsen(self):
         if (not config.active_only):
@@ -465,17 +449,15 @@ class BagParser:
             return
         self.database.add_gemeenten_to_woonplaatsen()
 
-    def __update_status(self, final=False):
+    def __update_xml_status(self, final=False):
         if (final or
                 (self.gui_time is None) or
                 (time.perf_counter() - self.gui_time > 0.5)):
 
             self.gui_time = time.perf_counter()
             self.elapsed_time = self.gui_time - self.start_time
-            tags_per_second = round(self.count_xml / self.elapsed_time)
+            tags_per_second = round(self.count_xml_tags / self.elapsed_time)
             text = " {:.1f}s".format(self.elapsed_time) + \
-                   " | XML total/per second: {:,d}".format(self.count_xml) + \
+                   " | XML total/per second: {:,d}".format(self.count_xml_tags) + \
                    "/{:,d}".format(tags_per_second)
-            if self.count_xml > self.total_xml:
-                self.total_xml = self.count_xml
-            utils.print_progress_bar(self.count_xml, self.total_xml, text, final)
+            utils.print_progress_bar(self.count_xml_files, self.total_xml_files, text, final)

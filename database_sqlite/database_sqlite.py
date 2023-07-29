@@ -1,7 +1,7 @@
 import sqlite3
 
-import config
 import utils
+import config
 
 
 class DatabaseSqlite:
@@ -441,17 +441,27 @@ class DatabaseSqlite:
 
         self.connection.commit()
 
-    def check_valid_database(self):
+    def table_exists(self, table_name):
         # Check if database contains adressen tabel
-        aantal = self.fetchone("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'adressen';")
-        if aantal != 1:
-            raise Exception(f"SQLite database '{config.file_db_sqlite}' bevat geen adressen tabel. "
-                            "Importeer BAG eerst.")
+        count = self.fetchone(f"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table_name}';")
+        return count == 1
 
     def test_bag_adressen(self):
-        self.check_valid_database()
+        if not self.table_exists('adressen'):
+            utils.print_log("SQLite database bevat geen adressen tabel. Importeer BAG eerst.", True)
+            quit()
 
         utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_sqlite}'")
+
+        if self.table_exists('nummers'):
+            sql = "SELECT begindatum_geldigheid FROM nummers ORDER BY begindatum_geldigheid DESC LIMIT 1"
+            datum = self.fetchone(sql)
+            utils.print_log(f"info: laatste nummer begindatum_geldigheid: {datum}")
+
+        if self.table_exists('panden'):
+            sql = "SELECT begindatum_geldigheid FROM panden ORDER BY begindatum_geldigheid DESC LIMIT 1"
+            datum = self.fetchone(sql)
+            utils.print_log(f"info: laatste pand begindatum_geldigheid: {datum}")
 
         # Soms zitten er nog oude gemeenten die niet meer bestaan in de gemeenten.csv filee
         aantal = self.fetchone("""

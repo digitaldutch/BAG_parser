@@ -2,8 +2,8 @@ import locale
 
 import psutil
 
-version = 63
-version_date = '28 July 2023'
+version = 64
+version_date = '29 July 2023'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -30,7 +30,7 @@ active_only = True
 # If an adressen table is created some BAG tables are no longer needed and can be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
 # You can also delete these tables afterward using the utils_sqlite_shrink.py script.
-delete_no_longer_needed_bag_tables = True
+delete_no_longer_needed_bag_tables = False
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.

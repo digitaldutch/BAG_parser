@@ -4,7 +4,7 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Converts in 10 minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
+Converts in 10 minutes (AMD 7700X) the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
 en Gebouwen) into a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
 No need to install any dependencies or a database server.
 
@@ -34,7 +34,7 @@ table. The SQLite database can be used directly, or as a source to generate a *.
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.11 works. Older Python versions are slower and may work, but are not tested.
+* Python 3.11. Older Python versions may work, but are not tested and certainly slower.
 
 ## Usage
 * Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
@@ -47,7 +47,7 @@ Update parser:
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Set your options in [config.py](config.py)
 * Run `import_bag.py`
-* Drink a cup of coffee for 10 minutes ☕😎 while watching the progress bar.
+* Drink a cup of coffee for 10 minutes (AMD 7700X) ☕😎 while watching the progress bar.
 * Open the SQLite database with your favorite tool. I like [DBeaver](https://dbeaver.io/).
 Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
@@ -112,14 +112,18 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 WGS84 coordinates if you need higher accuracy. 
 * Probably several more things that I forgot. Let me know by filing a GitHub issue.
 
-## Other tools 
+## Documents
+* [Praktijkhandleiding BAG](https://imbag.github.io/praktijkhandleiding/) 
+* [Catalogus Basisregistratie Adressen en Gebouwen](https://www.geobasisregistraties.nl/documenten/publicatie/2018/03/12/catalogus-2018)
+
+## Other tools
 
 #### nlextract
-Just a limited amount of data is parsed. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/), 
-who have their own, much more complex but also complete [parser](https://github.com/nlextract/NLExtract). 
+This tool parses not all data. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/),
+who have their own more complex but also complete [parser](https://github.com/nlextract/NLExtract).
 
 #### bagconv
-Bert hubert has [written a parser](https://berthub.eu/articles/posts/dutch-postcode-and-building-database/) in C++, 
+Bert hubert has [written a parser](https://berthub.eu/articles/posts/dutch-postcode-and-building-database/) in C++,
 [bagconv](https://github.com/berthubert/bagconv), which is quite similar to this one.
 
 ## License

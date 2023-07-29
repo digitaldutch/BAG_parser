@@ -16,7 +16,10 @@ class Exporter:
         status = StatusUpdater()
 
         utils.print_log(f"start: export adressen naar csv file '{output_filename}'")
-        self.database.check_valid_database()
+
+        if not self.database.table_exists('adressen'):
+            utils.print_log("SQLite database bevat geen adressen tabel. Importeer BAG eerst.", True)
+            quit()
 
         file = open(output_filename, 'w', newline='', encoding='utf-8')
         writer = csv.writer(file)
