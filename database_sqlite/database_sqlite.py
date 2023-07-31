@@ -286,7 +286,7 @@ class DatabaseSqlite:
                 oppervlakte, rd_x, rd_y, longitude, latitude, bouwjaar, geometry)
             SELECT
                 n.id AS nummer_id,
-                p.id AS pand_id,
+                v.pand_id,
                 v.id AS verblijfsobject_id,
                 w.gemeente_id,
                 o.woonplaats_id,
@@ -311,6 +311,9 @@ class DatabaseSqlite:
             LEFT JOIN panden p            ON v.pand_id       = p.id;
         """)
 
+        utils.print_log('create adressen tabel: importeer pand info voor adressen met meerdere panden')
+        self.adressen_import_meerdere_panden()
+
         utils.print_log('create adressen tabel: import ligplaatsen data')
         self.adressen_import_ligplaatsen()
 
@@ -327,6 +330,47 @@ class DatabaseSqlite:
         self.adressen_update_nevenadressen()
 
         self.connection.commit()
+
+    def adressen_import_meerdere_panden(self):
+
+        self.connection.executescript("""
+            DROP TABLE IF EXISTS temp_pand_ids;
+            
+            CREATE TEMP TABLE temp_pand_ids (
+            nummer_id TEXT,
+            pand_id TEXT
+        );""")
+
+        adressen = self.fetchall("SELECT nummer_id, pand_id FROM verblijfsobjecten WHERE pand_id LIKE '%,%'")
+
+        parameters = []
+        for adres in adressen:
+            pand_ids = adres[1].split(',')
+            for pand_id in pand_ids:
+                parameters.append([adres[0], pand_id])
+
+        sql = "INSERT INTO temp_pand_ids (nummer_id, pand_id) VALUES (?, ?)"
+        self.connection.executemany(sql, parameters)
+
+        # Copy bouwjaar and geometry to adressen table. Only last one remains.
+        # Maybe add a multi-bouwjaar and multi-geometry option later.
+        self.connection.executescript("""
+            UPDATE adressen SET
+              bouwjaar = p.bouwjaar
+            FROM (
+                   SELECT
+                     t.pand_id,
+                     t.nummer_id,
+                     panden.geometry,
+                     panden.bouwjaar
+                   FROM temp_pand_ids t
+                          LEFT JOIN panden ON panden.id = t.pand_id
+                 ) AS p
+            WHERE p.nummer_id = adressen.nummer_id;
+        """)
+
+        self.connection.commit()
+
 
     def adressen_import_ligplaatsen(self):
         self.connection.executescript("""

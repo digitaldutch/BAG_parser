@@ -107,20 +107,29 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 ## Adressen table
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 
 
-## Limitations 
+## Limitations and notes
 * The WGS84 coordinates are calculated using [approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees](docs/Benaderingsformules_RD_WGS.pdf). This conversion has an error of a few decimeters. Don't use the 
 WGS84 coordinates if you need higher accuracy. 
-* Probably several more things that I forgot. Let me know by filing a GitHub issue.
+* verblijfsobjecten table:  
+  Some gebruiksdoel, pand_id and nevenadressen fields contain multiple
+  values that are separated by commas. Be careful if you do queries with joins on those fields.
+* Adressen table:  
+  * Some gebruiksdoel and pand_id fields contain multiple values that are separated by commas.
+  * The bouwjaar field always contains a single bouwjaar, even if an address has multiple panden. 
+* There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
 
 ## Documents
 * [Praktijkhandleiding BAG](https://imbag.github.io/praktijkhandleiding/) 
 * [Catalogus Basisregistratie Adressen en Gebouwen](https://www.geobasisregistraties.nl/documenten/publicatie/2018/03/12/catalogus-2018)
 
-## Other tools
+## Tools
+
+#### Official BAG viewer
+The Kadaster has an online [BAG viewer](https://bagviewer.kadaster.nl/) where you can search any address or other info in the official database.
 
 #### nlextract
-This tool parses not all data. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/),
-who have their own more complex but also complete [parser](https://github.com/nlextract/NLExtract).
+This tool does not parse all data. If you need more data or professional support, buy it from [nlextract](https://nlextract.nl/),
+who have a more complex, but also complete [parser](https://github.com/nlextract/NLExtract).
 
 #### bagconv
 Bert hubert has [written a parser](https://berthub.eu/articles/posts/dutch-postcode-and-building-database/) in C++,
