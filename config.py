@@ -2,7 +2,7 @@ import locale
 
 import psutil
 
-version = 68
+version = 69
 version_date = '31 July 2023'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
@@ -39,7 +39,7 @@ use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
 # The data is stored in polygon geojson format in the geometry field.
-# And the database size will increase from 1.7GB to 16GB or 8GB if no longer needed tables are deleted.
+# And the database size will increase from 1.7GB to 16GB. Or 7GB with delete_no_longer_needed_bag_tables enabled.
 # Parsing will also take a few minutes more.
 parse_geometries = False
 

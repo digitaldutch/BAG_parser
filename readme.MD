@@ -115,7 +115,7 @@ WGS84 coordinates if you need higher accuracy.
   values that are separated by commas. Be careful if you do queries with joins on those fields.
 * Adressen table:  
   * Some gebruiksdoel and pand_id fields contain multiple values that are separated by commas.
-  * The bouwjaar field always contains a single bouwjaar, even if an address has multiple panden. 
+  * The bouwjaar and geometry field only contain the data of one pand, even if an address has multiple panden. 
 * There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
 
 ## Documents

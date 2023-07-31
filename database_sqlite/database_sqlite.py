@@ -356,6 +356,7 @@ class DatabaseSqlite:
         # Maybe add a multi-bouwjaar and multi-geometry option later.
         self.connection.executescript("""
             UPDATE adressen SET
+              geometry = p.geometry,
               bouwjaar = p.bouwjaar
             FROM (
                    SELECT
