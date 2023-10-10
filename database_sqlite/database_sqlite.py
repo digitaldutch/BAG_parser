@@ -477,16 +477,39 @@ class DatabaseSqlite:
 
     def adressen_fix_bag_errors(self):
         # The BAG contains some buildings with bouwjaar 9999
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE bouwjaar > 2050;")
-        utils.print_log("fix: test adressen met ongeldig bouwjaar > 2050: " + str(aantal))
+        last_valid_build_year = 2040
+        panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
+
+        # Show max first 10 items with invalid build year
+        panden = panden[slice(10)]
+        aantal = len(panden)
+
+        text_panden = ''
+        for pand in panden:
+            if text_panden:
+                text_panden += ','
+            text_panden += pand[0] + ' ' + str(pand[1])
+
+        utils.print_log(f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}"
+                        f" | panden: {text_panden}")
 
         if aantal > 0:
-            utils.print_log(f"fix: verwijder {aantal:n} ongeldige bouwjaren (> 2100)")
-            self.connection.execute("UPDATE adressen SET bouwjaar=NULL WHERE bouwjaar > 2100;")
+            utils.print_log(f"fix: verwijder {aantal: n} ongeldige bouwjaren (> {last_valid_build_year})")
+            self.connection.execute(f"UPDATE adressen SET bouwjaar=NULL WHERE bouwjaar > {last_valid_build_year}")
 
         # The BAG contains some residences with oppervlakte 999999
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE oppervlakte = 999999;")
-        utils.print_log("fix: test adressen met ongeldige oppervlakte = 999999: " + str(aantal))
+        verblijfsobject_ids = self.fetchall("SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 999999;")
+        aantal = len(verblijfsobject_ids)
+
+        text_ids = ''
+        for verblijfsobject_id in verblijfsobject_ids:
+            if text_ids:
+                text_ids += ','
+            text_ids += verblijfsobject_id[0]
+
+        utils.print_log(f"fix: test adressen met ongeldige oppervlakte = 999999: {aantal: n}"
+                        f" | verblijfsobject_ids: {text_ids}")
+
         if aantal > 0:
             utils.print_log(f"fix: verwijder {aantal:n} ongeldige oppervlaktes (999999)")
             self.connection.execute("UPDATE adressen SET oppervlakte=NULL WHERE oppervlakte = 999999;")
