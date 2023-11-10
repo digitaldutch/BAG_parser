@@ -274,19 +274,63 @@ class DatabaseSqlite:
         self.connection.executescript(f"""
             DROP TABLE IF EXISTS adressen;
             
-            CREATE TABLE adressen (nummer_id TEXT PRIMARY KEY, pand_id TEXT, verblijfsobject_id TEXT, 
-                gemeente_id INTEGER, woonplaats_id INTEGER, openbare_ruimte_id INTEGER, object_type TEXT, 
-                gebruiksdoel TEXT, postcode TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, 
-                oppervlakte FLOAT, rd_x FLOAT, rd_y FLOAT, latitude FLOAT, longitude FLOAT, bouwjaar INTEGER,
+            CREATE TABLE adressen (
+                nummer_id TEXT PRIMARY KEY, 
+                nummer_begindatum_geldigheid TEXT, 
+                nummer_einddatum_geldigheid TEXT, 
+                pand_id TEXT, 
+                pand_begindatum_geldigheid TEXT, 
+                pand_einddatum_geldigheid TEXT, 
+                verblijfsobject_id TEXT, 
+                gemeente_id INTEGER, 
+                woonplaats_id INTEGER, 
+                openbare_ruimte_id INTEGER, 
+                object_type TEXT, 
+                gebruiksdoel TEXT, 
+                postcode TEXT, 
+                huisnummer INTEGER, 
+                huisletter TEXT, 
+                toevoeging TEXT, 
+                oppervlakte FLOAT, 
+                rd_x FLOAT, 
+                rd_y FLOAT, 
+                latitude FLOAT, 
+                longitude FLOAT, 
+                bouwjaar INTEGER,
                 hoofd_nummer_id TEXT, 
                 geometry TEXT);
 
-            INSERT INTO adressen (nummer_id, pand_id, verblijfsobject_id, gemeente_id, woonplaats_id, 
-                openbare_ruimte_id, object_type, gebruiksdoel, postcode, huisnummer, huisletter, toevoeging, 
-                oppervlakte, rd_x, rd_y, longitude, latitude, bouwjaar, geometry)
+            INSERT INTO adressen (
+                nummer_id, 
+                nummer_begindatum_geldigheid, 
+                nummer_einddatum_geldigheid, 
+                pand_id, 
+                pand_begindatum_geldigheid, 
+                pand_einddatum_geldigheid, 
+                verblijfsobject_id, 
+                gemeente_id, 
+                woonplaats_id, 
+                openbare_ruimte_id, 
+                object_type, 
+                gebruiksdoel, 
+                postcode, 
+                huisnummer, 
+                huisletter, 
+                toevoeging, 
+                oppervlakte, 
+                rd_x, 
+                rd_y, 
+                longitude, 
+                latitude, 
+                bouwjaar, 
+                geometry)
             SELECT
                 n.id AS nummer_id,
-                v.pand_id,
+                n.begindatum_geldigheid,
+                n.einddatum_geldigheid,
+                p.id,
+                p.begindatum_geldigheid,
+                p.einddatum_geldigheid,
                 v.id AS verblijfsobject_id,
                 w.gemeente_id,
                 o.woonplaats_id,
@@ -538,15 +582,13 @@ class DatabaseSqlite:
 
         utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_sqlite}'")
 
-        if self.table_exists('nummers'):
-            sql = "SELECT begindatum_geldigheid FROM nummers ORDER BY begindatum_geldigheid DESC LIMIT 1"
-            datum = self.fetchone(sql)
-            utils.print_log(f"info: laatste nummer begindatum_geldigheid: {datum}")
+        sql = "SELECT nummer_begindatum_geldigheid FROM adressen ORDER BY nummer_begindatum_geldigheid DESC LIMIT 1"
+        datum = self.fetchone(sql)
+        utils.print_log(f"info: laatste nummer_begindatum_geldigheid: {datum}")
 
-        if self.table_exists('panden'):
-            sql = "SELECT begindatum_geldigheid FROM panden ORDER BY begindatum_geldigheid DESC LIMIT 1"
-            datum = self.fetchone(sql)
-            utils.print_log(f"info: laatste pand begindatum_geldigheid: {datum}")
+        sql = "SELECT pand_begindatum_geldigheid FROM adressen ORDER BY pand_begindatum_geldigheid DESC LIMIT 1"
+        datum = self.fetchone(sql)
+        utils.print_log(f"info: laatste pand_begindatum_geldigheid: {datum}")
 
         # Soms zitten er nog oude gemeenten die niet meer bestaan in de gemeenten.csv filee
         aantal = self.fetchone("""
