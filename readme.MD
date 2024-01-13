@@ -85,16 +85,25 @@ SQLite data into a live Firebird database.
 Parses the original BAG file and transforms it into a SQLite database. Takes 9 minutes to complete
 on an AMD 7700X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
-### [export_to_csv_postcodes.py](export_to_csv_postcodes.py)
-Exports the addresses in SQLite database to a *.csv file with address info only. Takes about 15 seconds.
-
 ### [export_to_csv.py](export_to_csv.py)
-Exports the addresses in SQLite database to a *.csv file including additional information, like year of construction, 
-latitude, longitude, floor area and intended use of buildings. Takes about 40 seconds.
+Exports the addresses in SQLite database to a *.csv file with address info only. By default, only the addresses and
+postcode data is exported (~15 seconds). Use the command options below for more output formats.  
 
-### [export_to_csv_postcode4_stats.py](export_to_csv_postcode4_stats.py) <br> [export_to_csv_postcode5_stats.py](export_to_csv_postcode5_stats.py)<br> [export_to_csv_postcode6_stats.py](export_to_csv_postcode6_stats.py) ###
-Exports statistics of postal code groups (4, 5 or all 6 characters) in SQLite database to a *.csv file including 
-number of addresses and average lat/lon of addresses in that zone. Takes several seconds.
+-a, --all  
+Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
+~40 seconds
+
+-h, --help  
+show help message
+
+-p4, --postcode4  
+Export statistics of 4 character postal code groups. (e.g. 1000). ~10s 
+
+-p5, --postcode5  
+Export statistics of 5 character postal code groups (e.g. 1000A). ~10s
+
+-p6, --postcode6  
+Export statistics of 6 character postal code groups (e.g. 1000AA). ~10s
 
 ### [test_sqlite_db.py](test_sqlite_db.py)
 Checks de SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
@@ -102,7 +111,7 @@ Checks de SQLite database for info and errors. `import_bag.py` also performs the
 ### [utils_sqlite_shrink.py](utils_sqlite_shrink.py)
 Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
-The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to True in [config.py](config.py).
+The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to `True` in [config.py](config.py).
 
 ## Adressen table
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 

@@ -1,9 +1,8 @@
 import locale
-
 import psutil
 
-version = 71
-version_date = '10 November 2023'
+version = 73
+version_date = '13 January 2024'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -30,7 +29,7 @@ active_only = True
 # If an adressen table is created some BAG tables are no longer needed and can be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
 # You can also delete these tables afterward using the utils_sqlite_shrink.py script.
-delete_no_longer_needed_bag_tables = False
+delete_no_longer_needed_bag_tables = True
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.
@@ -50,8 +49,8 @@ delete_addresses_without_public_spaces_if_less_than = 10
 
 # The parser uses multiprocessing to speed up parsing the data. For best performance set to the amount of
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
-# The psutil module is used to determine the physical CPU core count. If you don't want to install the psutil module,
-# you can just set the number manually.
+# The psutil module automatically determines the physical CPU core count. If you don't want to install the psutil
+# module, you can just set the number manually.
 cpu_cores_used = psutil.cpu_count(False)
 # cpu_cores_used = 8
 
