@@ -41,7 +41,7 @@ class Exporter:
             # if count > 10000: break  # Debug speedup
 
         if update_status:
-            status.ready()
+            status.end()
         utils.print_log(f"ready: export naar csv")
 
     def export_to_csv(self, output_filename):

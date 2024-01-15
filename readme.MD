@@ -19,7 +19,7 @@ The Dutch public addresses and buildings database (BAG or Basisregistratie Adres
 from the [Dutch cadastre](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) agency named Kadaster. Hooray 🙂. 
 
 The bad news is: The original BAG comes in a complex and hard to read XML format using thousands of zipped XML files, 
-which will quickly temper your initial enthusiasm to quite low levels. 
+which will quickly reduce your initial enthusiasm. 
 It also does not include municipalities or provinces and provides coordinates using a system that non-experts won't 
 expect named 
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
@@ -30,17 +30,18 @@ Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoeksc
 to standard WGS84 latitude and longitude coordinates. A few BAG bugs are fixed. 
 Year of construction, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
-table. The SQLite database can be used directly, or as a source to generate a *.csv file or update your own addresses 
+table. The SQLite database can be used directly, as a source to generate a *.csv file or to update your own addresses 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.11. Older Python versions may work, but are not tested and certainly slower.
+* Python 3.12. Older Python versions may work, but are not tested and certainly slower.
 
 ## Usage
-* Download, or better (because it allows easy updates) use git to download the BAG parser. Install parser:  
-`git clone https://github.com/digitaldutch/BAG_parser`  
-Update parser:
-`git pull https://github.com/digitaldutch/BAG_parser`
+* Download or use git (recommended as updates are easier) to download the BAG parser.   
+  Git command for initial checkout:  
+  `git clone https://github.com/digitaldutch/BAG_parser`   
+  Update to the latest version:  
+  `git pull https://github.com/digitaldutch/BAG_parser`
 * Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/kosteloze-download-bag-2-0-extract)
   or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
   and save the file as `bag.zip` in the `input` folder.
@@ -75,23 +76,23 @@ FROM adressen a
 WHERE postcode = '2514GL'
   AND huisnummer = 68;
 ```
-* When done parsing, use the [export_to_csv_postcodes.py](export_to_csv_postcodes.py) or [export_to_csv.py](export_to_csv.py) 
-to create a *.csv file. These functions are easy to customize. I myself use one (not on GitHub yet, as it is customized) to pump the 
-SQLite data into a live Firebird database.
+* When done parsing, use [export_to_csv.py](export_to_csv.py) to create a *.csv file. This file has several command line options (see below). 
+These conversion functions are easy to customize. 
+I myself use one (not on GitHub) to pump the SQLite data into a live Firebird database.
 
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into a SQLite database. Takes 9 minutes to complete
+Parses the original BAG file and transforms it into a SQLite database. Takes about 10 minutes to complete
 on an AMD 7700X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv.py](export_to_csv.py)
-Exports the addresses in SQLite database to a *.csv file with address info only. By default, only the addresses and
+Exports the addresses in SQLite database to a *.csv file. By default, only the addresses and
 postcode data is exported (~15 seconds). Use the command options below for more output formats.  
 
 -a, --all  
 Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
-~40 seconds
+~40s
 
 -h, --help  
 show help message
@@ -120,10 +121,10 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 * The WGS84 coordinates are calculated using [approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees](docs/Benaderingsformules_RD_WGS.pdf). This conversion has an error of a few decimeters. Don't use the 
 WGS84 coordinates if you need higher accuracy. 
 * verblijfsobjecten table:  
-  Some gebruiksdoel, pand_id and nevenadressen fields contain multiple
-  values that are separated by commas. Be careful if you do queries with joins on those fields.
+  Some gebruiksdoel, pand_id and nevenadressen fields contain multiple,
+  comma separated, values. Be careful if you do queries with joins on those fields.
 * Adressen table:  
-  * Some gebruiksdoel and pand_id fields contain multiple values that are separated by commas.
+  * Some gebruiksdoel and pand_id fields contain multiple, comma separated, values.
   * The bouwjaar and geometry field only contain the data of one pand, even if an address has multiple panden. 
 * There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
 
