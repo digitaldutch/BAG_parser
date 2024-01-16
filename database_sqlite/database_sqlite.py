@@ -520,13 +520,22 @@ class DatabaseSqlite:
         self.commit()
 
     def adressen_fix_bag_errors(self):
+        # Amsterdam heeft een reeks van panden met dummy bouwjaar 1005
+        # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-pand/bouwjaar-pand/
+        panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar=1005;")
+        aantal = len(panden)
+        utils.print_log(f"fix: test adressen met dummy bouwjaar 1005 in Amsterdam: {aantal: n}")
+        if aantal > 0:
+            utils.print_log(f"fix: verwijder {aantal:n} ongeldige 1005 bouwjaren")
+            self.connection.execute(f"UPDATE adressen SET bouwjaar=NULL WHERE bouwjaar=1005;")
+
         # The BAG contains some buildings with bouwjaar 9999
         last_valid_build_year = 2040
         panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
+        aantal = len(panden)
 
         # Show max first 10 items with invalid build year
         panden = panden[slice(10)]
-        aantal = len(panden)
 
         text_panden = ''
         for pand in panden:
@@ -538,7 +547,7 @@ class DatabaseSqlite:
                         f" | panden: {text_panden}")
 
         if aantal > 0:
-            utils.print_log(f"fix: verwijder {aantal: n} ongeldige bouwjaren (> {last_valid_build_year})")
+            utils.print_log(f"fix: verwijder {aantal:n} ongeldige bouwjaren (> {last_valid_build_year})")
             self.connection.execute(f"UPDATE adressen SET bouwjaar=NULL WHERE bouwjaar > {last_valid_build_year}")
 
         # The BAG contains some residences with oppervlakte 999999
@@ -562,6 +571,7 @@ class DatabaseSqlite:
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
                                " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
         utils.print_log("fix: test adressen zonder openbare ruimte: " + str(aantal))
+
         # Delete them if not too many
         if (aantal > 0) and (aantal < config.delete_addresses_without_public_spaces_if_less_than):
             utils.print_log(f"fix: verwijder {aantal:n} adressen zonder openbare ruimte")
