@@ -522,6 +522,7 @@ class DatabaseSqlite:
     def adressen_fix_bag_errors(self):
         # Amsterdam heeft een reeks van panden met dummy bouwjaar 1005
         # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-pand/bouwjaar-pand/
+        # Discussion: https://geoforum.nl/t/zijn-dummy-waarden-in-de-bag-toegestaan/9091/5
         panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar=1005;")
         aantal = len(panden)
         utils.print_log(f"fix: test adressen met dummy bouwjaar 1005 in Amsterdam: {aantal: n}")
@@ -542,9 +543,10 @@ class DatabaseSqlite:
             if text_panden:
                 text_panden += ','
             text_panden += pand[0] + ' ' + str(pand[1])
+        if text_panden:
+            text_panden = f" | panden: {text_panden}"
 
-        utils.print_log(f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}"
-                        f" | panden: {text_panden}")
+        utils.print_log(f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}{text_panden}")
 
         if aantal > 0:
             utils.print_log(f"fix: verwijder {aantal:n} ongeldige bouwjaren (> {last_valid_build_year})")
@@ -559,13 +561,22 @@ class DatabaseSqlite:
             if text_ids:
                 text_ids += ','
             text_ids += verblijfsobject_id[0]
+        if text_ids:
+            text_ids = f" | verblijfsobject_ids: {text_ids}"
 
-        utils.print_log(f"fix: test adressen met ongeldige oppervlakte = 999999: {aantal: n}"
-                        f" | verblijfsobject_ids: {text_ids}")
-
+        utils.print_log(f"fix: test adressen met ongeldige oppervlakte = 999999: {aantal: n}{text_ids}")
         if aantal > 0:
             utils.print_log(f"fix: verwijder {aantal:n} ongeldige oppervlaktes (999999)")
             self.connection.execute("UPDATE adressen SET oppervlakte=NULL WHERE oppervlakte = 999999;")
+
+        # The BAG contains some residences with oppervlakte 1 (In Amsterdam this is a valid dummy)
+        # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-vbo/gebruiksoppervlakte/
+        verblijfsobject_ids = self.fetchall("SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 1;")
+        aantal = len(verblijfsobject_ids)
+        utils.print_log(f"fix: test adressen met ongeldige oppervlakte = 1 (dummy value in Amsterdam): {aantal: n}")
+        if aantal > 0:
+            utils.print_log(f"fix: verwijder {aantal:n} met ongeldige oppervlakte = 1")
+            self.connection.execute("UPDATE adressen SET oppervlakte=NULL WHERE oppervlakte = 1;")
 
         # The BAG contains some addresses without valid public space
         aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
