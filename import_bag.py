@@ -58,7 +58,7 @@ def main():
             utils.print_log('addresses table is only created if active_only=True in config', True)
         else:
             db_sqlite.create_adressen_from_bag()
-            db_sqlite.adressen_fix_bag_errors()
+            db_sqlite.adressen_remove_dummy_values()
             db_sqlite.test_bag_adressen()
 
             if config.delete_no_longer_needed_bag_tables:

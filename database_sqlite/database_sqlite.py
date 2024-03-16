@@ -519,10 +519,12 @@ class DatabaseSqlite:
         """)
         self.commit()
 
-    def adressen_fix_bag_errors(self):
+    def adressen_remove_dummy_values(self):
+        # The BAG contains dummy values in some fields (bouwjaar, oppervlakte)
+        # See: https://geoforum.nl/t/zijn-dummy-waarden-in-de-bag-toegestaan/9091/5
+
         # Amsterdam heeft een reeks van panden met dummy bouwjaar 1005
         # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-pand/bouwjaar-pand/
-        # Discussion: https://geoforum.nl/t/zijn-dummy-waarden-in-de-bag-toegestaan/9091/5
         panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar=1005;")
         aantal = len(panden)
         utils.print_log(f"fix: test adressen met dummy bouwjaar 1005 in Amsterdam: {aantal: n}")

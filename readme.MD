@@ -27,7 +27,7 @@ expect named
 ## What this parser does
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
-to standard WGS84 latitude and longitude coordinates. A few BAG bugs are fixed. 
+to standard WGS84 latitude and longitude coordinates. Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
 Year of construction, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly, as a source to generate a *.csv file or to update your own addresses 

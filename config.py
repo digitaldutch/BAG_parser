@@ -1,8 +1,8 @@
 import locale
 import psutil
 
-version = 78
-version_date = '16 January 2024'
+version = 79
+version_date = '16 March 2024'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
