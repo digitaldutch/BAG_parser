@@ -40,5 +40,4 @@ class GemeentenParser:
         self.database.save_gemeenten(gemeenten)
         self.database.save_provincies(provincies)
 
-        self.elapsed_time = time.perf_counter() - self.start_time
-        utils.print_log('parse gemeenten/provincies csv ready' + " {:.4f}s".format(self.elapsed_time))
+        utils.print_log(f"parse gemeenten/provincies csv ready {utils.time_elapsed(self.start_time)}")

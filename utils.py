@@ -1,5 +1,6 @@
 import math
 import multiprocessing
+import time
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 import os
@@ -109,6 +110,32 @@ def print_progress_bar(i, max_value, text, final=False):
     sys.stdout.flush()
     if final:
         print('')
+
+
+def time_elapsed(start_time):
+    now_time = time.perf_counter()
+    elapsed_time = now_time - start_time
+
+    hours = elapsed_time // 3600
+    minutes = (elapsed_time % 3600) // 60
+    seconds = elapsed_time % 60
+
+    time_string = ""
+    if hours > 0:
+        time_string += f"{int(hours)}h "
+    if minutes > 0 or hours > 0:
+        time_string += f"{int(minutes)}m "
+
+    just_seconds = (hours == 0) and (minutes == 0)
+    if just_seconds and seconds < 1:
+        time_string += f"{seconds:.3f}s"
+    elif just_seconds and seconds < 10:
+        time_string += f"{seconds:.1f}s"
+    else:
+        time_string += f"{int(seconds)}s"
+
+    return time_string
+
 
 
 def bag_date_to_date(bag_date):

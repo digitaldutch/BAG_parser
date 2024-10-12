@@ -1,6 +1,8 @@
 import os
 import sys
 import platform
+import time
+
 import utils
 import config
 from database_sqlite import DatabaseSqlite
@@ -9,6 +11,8 @@ from bag.gemeente_parser import GemeentenParser
 
 
 def main():
+    start_time = time.perf_counter()
+
     utils.clear_log()
     utils.print_log(f"Python version {platform.python_version()}")
     utils.print_log(f"BAG parser version {config.version} | {config.version_date} | {config.cpu_cores_used} CPU cores")
@@ -74,6 +78,7 @@ def main():
 
     utils.print_log(f"ready: BAG XML to sqlite database '{config.file_db_sqlite}'")
 
+    utils.print_log(f"total run time: {utils.time_elapsed(start_time)}")
 
 if __name__ == '__main__':
     main()

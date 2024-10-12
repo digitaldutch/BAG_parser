@@ -407,7 +407,8 @@ class BagParser:
 
         self.database.commit()
 
-        utils.print_log(f'ready: parse XML {self.tag_name} | {self.elapsed_time:.2f}s '
+        time_elapsed = utils.time_elapsed(self.start_time)
+        utils.print_log(f'ready: parse XML {self.tag_name} | {time_elapsed} '
                         f'| XML total: {self.count_xml_tags:,d}')
 
         utils.empty_folder(self.folder_temp_xml)
@@ -473,7 +474,7 @@ class BagParser:
             self.gui_time = time.perf_counter()
             self.elapsed_time = self.gui_time - self.start_time
             tags_per_second = round(self.count_xml_tags / self.elapsed_time)
-            text = " {:.1f}s".format(self.elapsed_time) + \
-                   " | XML total/per second: {:,d}".format(self.count_xml_tags) + \
-                   "/{:,d}".format(tags_per_second)
-            utils.print_progress_bar(self.count_xml_files, self.total_xml_files, text, final)
+            time_elapsed_text = utils.time_elapsed(self.start_time)
+
+            bar_text = f" {time_elapsed_text} | XML total/per second: {self.count_xml_tags:d}/{tags_per_second:d}"
+            utils.print_progress_bar(self.count_xml_files, self.total_xml_files, bar_text, final)

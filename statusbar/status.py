@@ -4,17 +4,14 @@ import locale
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
-
 class StatusUpdater:
     last_update_time = None
     start_time = None
     elapsed_time = None
+    label = None
     count = 0
     total_count = 0
     refresh_time = 0.5
-
-    def __init__(self):
-        pass
 
     def start(self, total_count, label=''):
         self.last_update_time = None
@@ -30,8 +27,8 @@ class StatusUpdater:
         self.elapsed_time = self.last_update_time - self.start_time
         count_per_second = round(self.count / self.elapsed_time)
 
-        text = f'{self.elapsed_time:.1f}s | ' \
-               f'{self.label} {self.count:n}/{self.total_count:n} ({count_per_second:n}/s)'
+        time_elapsed = utils.time_elapsed(self.start_time)
+        text = f'{time_elapsed} | {self.label} {self.count:n}/{self.total_count:n} ({count_per_second:n}/s)'
         if info:
             text += f' | {info}'
 
