@@ -28,7 +28,7 @@ class StatusUpdater:
         count_per_second = round(self.count / self.elapsed_time)
 
         time_elapsed = utils.time_elapsed(self.start_time)
-        text = f'{time_elapsed} | {self.label} {self.count:n}/{self.total_count:n} ({count_per_second:n}/s)'
+        text = f'{time_elapsed} | {self.label} {self.count:,}/{self.total_count:,d} ({count_per_second:,d}/s)'
         if info:
             text += f' | {info}'
 

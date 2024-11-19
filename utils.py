@@ -137,7 +137,6 @@ def time_elapsed(start_time):
     return time_string
 
 
-
 def bag_date_to_date(bag_date):
     if len(bag_date) >= 16:
         return datetime(year=int(bag_date[0:4]), month=int(bag_date[5:7]), day=int(bag_date[8:10]))

@@ -476,5 +476,5 @@ class BagParser:
             tags_per_second = round(self.count_xml_tags / self.elapsed_time)
             time_elapsed_text = utils.time_elapsed(self.start_time)
 
-            bar_text = f" {time_elapsed_text} | XML total/per second: {self.count_xml_tags:d}/{tags_per_second:d}"
+            bar_text = f" {time_elapsed_text} | XML total: {self.count_xml_tags:,d} | per second: {tags_per_second:,d}"
             utils.print_progress_bar(self.count_xml_files, self.total_xml_files, bar_text, final)
