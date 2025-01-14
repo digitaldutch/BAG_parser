@@ -23,7 +23,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0308,GM0308,Baarn,26,PV26,Utrecht
 0489,GM0489,Barendrecht,28,PV28,Zuid-Holland
 0203,GM0203,Barneveld,25,PV25,Gelderland
-0888,GM0888,Beek,31,PV31,Limburg
+0888,GM0888,Beek (L.),31,PV31,Limburg
 1954,GM1954,Beekdaelen,31,PV31,Limburg
 0889,GM0889,Beesel,31,PV31,Limburg
 1945,GM1945,Berg en Dal,25,PV25,Gelderland
@@ -125,7 +125,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0163,GM0163,Hellendoorn,23,PV23,Overijssel
 0794,GM0794,Helmond,30,PV30,Noord-Brabant
 0531,GM0531,Hendrik-Ido-Ambacht,28,PV28,Zuid-Holland
-0164,GM0164,Hengelo,23,PV23,Overijssel
+0164,GM0164,Hengelo (O.),23,PV23,Overijssel
 0796,GM0796,'s-Hertogenbosch,30,PV30,Noord-Brabant
 0252,GM0252,Heumen,25,PV25,Gelderland
 0797,GM0797,Heusden,30,PV30,Noord-Brabant
@@ -156,7 +156,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0882,GM0882,Landgraaf,31,PV31,Limburg
 0415,GM0415,Landsmeer,27,PV27,Noord-Holland
 1621,GM1621,Lansingerland,28,PV28,Zuid-Holland
-0417,GM0417,Laren,27,PV27,Noord-Holland
+0417,GM0417,Laren (NH.),27,PV27,Noord-Holland
 0080,GM0080,Leeuwarden,21,PV21,Fryslân
 0546,GM0546,Leiden,28,PV28,Zuid-Holland
 0547,GM0547,Leiderdorp,28,PV28,Zuid-Holland
@@ -179,7 +179,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0938,GM0938,Meerssen,31,PV31,Limburg
 1948,GM1948,Meierijstad,30,PV30,Noord-Brabant
 0119,GM0119,Meppel,22,PV22,Drenthe
-0687,GM0687,Middelburg,29,PV29,Zeeland
+0687,GM0687,Middelburg (Z.),29,PV29,Zeeland
 1842,GM1842,Midden-Delfland,28,PV28,Zuid-Holland
 1731,GM1731,Midden-Drenthe,22,PV22,Drenthe
 1952,GM1952,Midden-Groningen,20,PV20,Groningen
@@ -236,7 +236,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0340,GM0340,Rhenen,26,PV26,Utrecht
 0597,GM0597,Ridderkerk,28,PV28,Zuid-Holland
 1742,GM1742,Rijssen-Holten,23,PV23,Overijssel
-0603,GM0603,Rijswijk,28,PV28,Zuid-Holland
+0603,GM0603,Rijswijk (ZH.),28,PV28,Zuid-Holland
 1669,GM1669,Roerdalen,31,PV31,Limburg
 0957,GM0957,Roermond,31,PV31,Limburg
 0736,GM0736,De Ronde Venen,26,PV26,Utrecht
@@ -263,7 +263,7 @@ Gemeentecode,GemeentecodeGM,Gemeentenaam,Provinciecode,ProvinciecodePV,Provincie
 0532,GM0532,Stede Broec,27,PV27,Noord-Holland
 0851,GM0851,Steenbergen,30,PV30,Noord-Brabant
 1708,GM1708,Steenwijkerland,23,PV23,Overijssel
-0971,GM0971,Stein,31,PV31,Limburg
+0971,GM0971,Stein (L.),31,PV31,Limburg
 1904,GM1904,Stichtse Vecht,26,PV26,Utrecht
 1900,GM1900,Súdwest-Fryslân,21,PV21,Fryslân
 0715,GM0715,Terneuzen,29,PV29,Zeeland

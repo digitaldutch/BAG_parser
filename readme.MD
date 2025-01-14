@@ -83,8 +83,8 @@ I myself use one (not on GitHub) to pump the SQLite data into a live Firebird da
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into a SQLite database. Takes about 10 minutes to complete
-on an AMD 7700X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
+Parses the original BAG file and transforms it into a SQLite database. Takes about 6 minutes to complete
+on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv.py](export_to_csv.py)
 Exports the addresses in SQLite database to a *.csv file. By default, only the addresses and
