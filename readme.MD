@@ -16,7 +16,7 @@ our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
 ## About the BAG
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
-from the [Dutch cadastre](https://www.kadaster.nl/-/kosteloze-download-bag-2.0-extract) agency named Kadaster. Hooray 🙂. 
+from the [Dutch cadastre](https://www.kadaster.nl/-/gratis-download-bag-extract) agency named Kadaster. Hooray 🙂. 
 
 The bad news is: The original BAG comes in a complex and hard to read XML format using thousands of zipped XML files, 
 which will quickly reduce your initial enthusiasm. 
@@ -42,7 +42,7 @@ databases. There are a couple of options available in the [config.py](config.py)
   `git clone https://github.com/digitaldutch/BAG_parser`   
   Update to the latest version:  
   `git pull https://github.com/digitaldutch/BAG_parser`
-* Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/kosteloze-download-bag-2-0-extract)
+* Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/gratis-download-bag-extract)
   or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
   and save the file as `bag.zip` in the `input` folder.
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
