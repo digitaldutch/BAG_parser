@@ -581,13 +581,13 @@ class DatabaseSqlite:
             self.connection.execute("UPDATE adressen SET oppervlakte=NULL WHERE oppervlakte = 1;")
 
         # The BAG contains some addresses without valid public space
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
+        address_count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
                                " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
-        utils.print_log("fix: test adressen zonder openbare ruimte: " + str(aantal))
+        utils.print_log("fix: test adressen zonder openbare ruimte: " + str(address_count))
 
         # Delete them if not too many
-        if (aantal > 0) and (aantal < config.delete_addresses_without_public_spaces_if_less_than):
-            utils.print_log(f"fix: verwijder {aantal:n} adressen zonder openbare ruimte")
+        if (address_count > 0) and (address_count < config.delete_addresses_without_public_spaces_if_less_than):
+            utils.print_log(f"fix: verwijder {address_count:n} adressen zonder openbare ruimte")
             self.connection.execute("DELETE FROM adressen WHERE openbare_ruimte_id IS NULL "
                                     "OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)")
 
@@ -598,7 +598,19 @@ class DatabaseSqlite:
         count = self.fetchone(f"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table_name}';")
         return count == 1
 
-    def test_bag_adressen(self):
+    def test_bag_adressen(self) -> bool:
+        """
+            Tests the BAG (Basisregistratie Adressen en Gebouwen) data integrity.
+
+            This method checks if there are any errors in the database related to municipalities
+            without associated addresses and other possible issues.
+
+            Returns:
+                bool: True if no errors were found (total_error_count == 0),
+                      False otherwise.
+            """
+        total_error_count = 0
+
         if not self.table_exists('adressen'):
             utils.print_log("SQLite database bevat geen adressen tabel. Importeer BAG eerst.", True)
             quit()
@@ -614,84 +626,113 @@ class DatabaseSqlite:
         utils.print_log(f"info: laatste pand_begindatum_geldigheid: {datum}")
 
         # Soms zitten er nog oude gemeenten die niet meer bestaan in de gemeenten.csv filee
-        aantal = self.fetchone("""
+        count = self.fetchone("""
             SELECT COUNT(*) FROM gemeenten
             WHERE id NOT IN (SELECT DISTINCT gemeente_id FROM adressen);
             """)
-        utils.print_log("test: gemeenten zonder adressen: " + str(aantal), aantal > 0)
+        total_error_count += count
+        utils.print_log("test: gemeenten zonder adressen: " + str(count), count > 0)
 
-        if aantal > 0:
+        if count > 0:
             gemeenten = self.fetchall("""
                 SELECT id, naam FROM gemeenten 
                 WHERE id NOT IN (SELECT DISTINCT gemeente_id FROM adressen);
                 """)
 
-            s = ''
-            for gemeente in gemeenten:
-                if s:
-                    s += ', '
-                s += str(gemeente[0]) + ' ' + gemeente[1]
-            utils.print_log("test: gemeenten zonder adressen: " + s, aantal > 0)
+            gemeenten_formatted = ', '.join(f"{gemeente[0]} {gemeente[1]}" for gemeente in gemeenten)
 
-        aantal = self.fetchone("""
+            utils.print_log("test: gemeenten zonder adressen: " + gemeenten_formatted, count > 0)
+
+        count = self.fetchone("""
             SELECT COUNT(*) FROM woonplaatsen 
             WHERE gemeente_id IS NULL OR gemeente_id NOT IN (SELECT id FROM gemeenten);
             """)
-        utils.print_log("test: woonplaatsen zonder gemeente: " + str(aantal), aantal > 0)
+        total_error_count += count
+        utils.print_log("test: woonplaatsen zonder gemeente: " + str(count), count > 0)
 
-        aantal = self.fetchone("""
+        count = self.fetchone("""
             SELECT COUNT(*) FROM adressen 
             WHERE openbare_ruimte_id IS NULL
                 OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)
             """)
-        utils.print_log("test: adressen zonder openbare ruimte: " + str(aantal), aantal > 0)
+        total_error_count += count
+        utils.print_log("test: adressen zonder openbare ruimte: " + str(count), count > 0)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE woonplaats_id IS NULL;")
-        utils.print_log("test: adressen zonder woonplaats: " + str(aantal), aantal > 0)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE woonplaats_id IS NULL;")
+        total_error_count += count
+        utils.print_log("test: adressen zonder woonplaats: " + str(count), count > 0)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;")
-        utils.print_log("test: adressen zonder gemeente: " + str(aantal), aantal > 0)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE gemeente_id IS NULL;")
+        total_error_count += count
+        utils.print_log("test: adressen zonder gemeente: " + str(count), count > 0)
 
         # Het is makkelijk om per ongeluk een gemeenten.csv te genereren die niet in UTF-8 is. Testen dus.
         naam = self.fetchone("SELECT naam FROM gemeenten WHERE id=1900")
-        utils.print_log("test: gemeentenamen moeten in UTF-8 zijn: " + naam, naam != 'Súdwest-Fryslân')
+        is_error = naam != 'Súdwest-Fryslân'
+        if is_error: total_error_count += 1
+        utils.print_log("test: gemeentenamen moeten in UTF-8 zijn: " + naam, is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
-        utils.print_log("test: panden zonder locatie: " + str(aantal), aantal > 0)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
+        total_error_count += count
+        utils.print_log("test: panden zonder locatie: " + str(count), count > 0)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen "
+        count = self.fetchone("SELECT COUNT(*) FROM adressen "
                                "WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';")
-        utils.print_log("test: ligplaatsen zonder locatie: " + str(aantal), aantal > 0)
+        total_error_count += count
+        utils.print_log("test: ligplaatsen zonder locatie: " + str(count), count > 0)
 
-        aantal = self.fetchone(
-            "SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
-        utils.print_log("test: standplaatsen zonder locatie: " + str(aantal), aantal > 0)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen "
+                              "WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
+        total_error_count += count
+        utils.print_log("test: standplaatsen zonder locatie: " + str(count), count > 0)
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id FROM adressen WHERE postcode='1181BN' AND huisnummer=1;")
+        is_error = woonplaats_id != 1050
+        if is_error: total_error_count += 1
         utils.print_log("test: nummeraanduiding WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). "
-                        f"Niet Amsterdam (3594): {woonplaats_id:n}", woonplaats_id != 1050)
+                        f"Niet Amsterdam (3594): {woonplaats_id:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen;")
-        utils.print_log(f"info: adressen: {aantal:n}", aantal < 9000000)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen;")
+        is_error = count < 9000000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: adressen: {count:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT NULL;")
-        utils.print_log(f"info: panden: {aantal:n}", aantal < 9000000)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT NULL;")
+        is_error = count < 9000000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: panden: {count:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='ligplaats';")
-        utils.print_log(f"info: ligplaatsen: {aantal:n}", aantal < 10000)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='ligplaats';")
+        is_error = count < 10000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: ligplaatsen: {count:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='standplaats';")
-        utils.print_log(f"info: standplaatsen: {aantal:n}", aantal < 20000)
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE object_type='standplaats';")
+        is_error = count < 20000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: standplaatsen: {count:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM openbare_ruimten;")
-        utils.print_log(f"info: openbare ruimten: {aantal:n}", aantal < 250000)
+        count = self.fetchone("SELECT COUNT(*) FROM openbare_ruimten;")
+        is_error = count < 250000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: openbare ruimten: {count:n}", count < is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM woonplaatsen;")
-        utils.print_log(f"info: woonplaatsen: {aantal:n}", aantal < 2000)
+        count = self.fetchone("SELECT COUNT(*) FROM woonplaatsen;")
+        is_error = count < 2000
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: woonplaatsen: {count:n}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM gemeenten;")
-        utils.print_log(f"info: gemeenten: {aantal}", aantal < 300)
+        count = self.fetchone("SELECT COUNT(*) FROM gemeenten;")
+        is_error = count < 300
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: gemeenten: {count}", is_error)
 
-        aantal = self.fetchone("SELECT COUNT(*) FROM provincies;")
-        utils.print_log(f"info: provincies: {aantal}", aantal != 12)
+        count = self.fetchone("SELECT COUNT(*) FROM provincies;")
+        is_error = count != 12
+        if is_error: total_error_count += 1
+        utils.print_log(f"info: provincies: {count}", is_error)
+
+        utils.print_log(f"test: total errors: {total_error_count}", total_error_count > 0)
+
+        return total_error_count == 0

@@ -1,8 +1,8 @@
 import locale
 import psutil
 
-version = 83
-version_date = '27 January 2025'
+version = 84
+version_date = '10 March 2025'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -42,10 +42,10 @@ use_short_street_names = False
 # Parsing will also take a few minutes more.
 parse_geometries = False
 
-# Sometimes the BAG contains addresses without a valid public space id. Generally those are invalid addresses.
+# The BAG sometimes contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is less than the number below.
 # Set to 0 if you prefer warning messages and manually check and correct these entries yourself.
-delete_addresses_without_public_spaces_if_less_than = 10
+delete_addresses_without_public_spaces_if_less_than = 100
 
 # The parser uses multiprocessing to speed up parsing the data. For best performance set to the amount of
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.

@@ -8,7 +8,7 @@ Converts in a few minutes the big, complex and hard to read XML Dutch addresses 
 en Gebouwen) into a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
 No need to install any dependencies or a database server.
 
-Additional scripts will convert this SQLite database to other formats, like CSV. 
+Another oneliner script (see below) will convert this SQLite database to CSV in 15 seconds. 
 
 ## Download the parsed BAG
 If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
