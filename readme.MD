@@ -5,7 +5,7 @@
 
 ## TL;DR
 Converts in a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
-en Gebouwen) into a user-friendly, file based, blazingly fast SQLite database by running a single Python script. 
+en Gebouwen) into a user-friendly, file-based, blazingly fast SQLite database by running a single Python script. 
 No need to install any dependencies or a database server.
 
 Another oneliner script (see below) will convert this SQLite database to CSV in 15 seconds. 
@@ -28,13 +28,13 @@ expect named
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
 to standard WGS84 latitude and longitude coordinates. Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
-Year of construction, floor area and intended use of buildings are also provided. 
+Construction year, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
-table. The SQLite database can be used directly, as a source to generate a *.csv file or to update your own addresses 
+table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.13. Older Python versions may work, but are not tested and certainly slower.
+* Python 3.13. Older Python versions may work but are not tested and certainly slower.
 
 ## Usage
 * Download or use git (recommended as updates are easier) to download the BAG parser.   
@@ -83,19 +83,19 @@ I myself use one (not on GitHub) to pump the SQLite data into a live Firebird da
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into a SQLite database. Takes about 6 minutes to complete
+Parses the original BAG file and transforms it into an SQLite database. Takes about 6 minutes to complete
 on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv.py](export_to_csv.py)
 Exports the addresses in SQLite database to a *.csv file. By default, only the addresses and
-postcode data is exported (~15 seconds). Use the command options below for more output formats.  
+postcode data are exported (~15 seconds). Use the command options below for more output formats.  
 
 -a, --all  
 Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
 ~40s
 
 -h, --help  
-show help message
+show the help information message
 
 -p4, --postcode4  
 Export statistics of 4 character postal code groups. (e.g. 1000). ~10s 
@@ -107,7 +107,7 @@ Export statistics of 5 character postal code groups (e.g. 1000A). ~10s
 Export statistics of 6 character postal code groups (e.g. 1000AA). ~10s
 
 ### [test_sqlite_db.py](test_sqlite_db.py)
-Checks de SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
+Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
 ### [utils_sqlite_shrink.py](utils_sqlite_shrink.py)
 Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
@@ -122,9 +122,9 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 WGS84 coordinates if you need higher accuracy. 
 * verblijfsobjecten table:  
   Some gebruiksdoel, pand_id and nevenadressen fields contain multiple,
-  comma separated, values. Be careful if you do queries with joins on those fields.
+  comma-separated, values. Be careful if you do queries with joins on those fields.
 * Adressen table:  
-  * Some gebruiksdoel and pand_id fields contain multiple, comma separated, values.
+  * Some gebruiksdoel and pand_id fields contain multiple, comma-separated, values.
   * The bouwjaar and geometry field only contain the data of one pand, even if an address has multiple panden. 
 * There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
 

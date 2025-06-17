@@ -1,28 +1,28 @@
 import locale
 import psutil
 
-version = 84
-version_date = '10 March 2025'
+version = 85
+version_date = '17 June 2025'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
-# Location of BAG zip file downloaded from kadaster. See readme.MD
+# Location of the BAG zip file downloaded from kadaster. See readme.MD
 file_bag = 'input/bag.zip'
 
-# Location of gemeenten file downloaded from cbs.nl. See readme.MD
+# Location of the gemeenten file downloaded from cbs.nl. See readme.MD
 file_gemeenten = 'input/gemeenten.csv'
 
-# output SQLite database with parsed BAG
+# Output SQLite database with parsed BAG
 file_db_sqlite = 'output/bag.sqlite'
 
-# log file with progress, warnings and error messages. This info is also written to the console.
+# Log file containing progress, warnings and error messages. This info is also written to the console.
 file_log = 'output/bag_importer.log'
 
 # The parser creates an 'adressen' table merging the data of nummers, panden, verblijfsobjecten, ligplaatsen and
 # standplaatsen tables into one single table. It only contains active addresses.
 create_adressen_table = True
 
-# Only add active records. Historic data of no longer active records are removed.
+# Only add active records. Historical data of no longer active records are removed.
 # The 'adressen' table can only be created if set to True.
 active_only = True
 
@@ -43,11 +43,11 @@ use_short_street_names = False
 parse_geometries = False
 
 # The BAG sometimes contains addresses without a valid public space id. Generally those are invalid addresses.
-# They will be automatically deleted if the total number of invalid addresses is less than the number below.
+# They will be automatically deleted if the total number of invalid addresses is lower than the number below.
 # Set to 0 if you prefer warning messages and manually check and correct these entries yourself.
 delete_addresses_without_public_spaces_if_less_than = 100
 
-# The parser uses multiprocessing to speed up parsing the data. For best performance set to the amount of
+# The parser uses multiprocessing to speed up parsing the data. For best performance set to the number of
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
 # The psutil module automatically determines the physical CPU core count. If you don't want to install the psutil
 # module, you can just set the number manually.
