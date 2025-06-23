@@ -16,7 +16,7 @@ def main():
     utils.clear_log()
     utils.print_log(f"Python version {platform.python_version()}")
     utils.print_log(f"BAG parser version {config.version} | {config.version_date} | {config.cpu_cores_used} CPU cores")
-    utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
+    utils.print_log(f"start: parse BAG XML '{config.file_bag}' to DuckDB database '{config.file_db_duckdb}'")
 
     if not os.path.exists(config.file_bag):
         sys.exit('BAG file not found. See readme.MD')
