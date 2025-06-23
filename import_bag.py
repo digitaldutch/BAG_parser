@@ -78,7 +78,7 @@ def main():
 
     db_duckdb.close()
 
-    utils.print_log(f"ready: BAG XML to sqlite database '{config.file_db_sqlite}'")
+    utils.print_log(f"ready: BAG XML to DuckDB database '{config.file_db_duckdb}'")
 
     utils.print_log(f"total run time: {utils.time_elapsed(start_time)}")
 
