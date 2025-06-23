@@ -267,8 +267,8 @@ class DatabaseDuckdb:
                 huisnummer INTEGER, 
                 huisletter TEXT,
                 toevoeging TEXT, 
-                woonplaats_id TEXT, 
-                openbare_ruimte_id TEXT,
+                woonplaats_id UBIGINT, 
+                openbare_ruimte_id UBIGINT,
                 status TEXT, 
                 begindatum_geldigheid DATE, 
                 einddatum_geldigheid DATE);
@@ -557,7 +557,7 @@ class DatabaseDuckdb:
         self.connection.execute("""
             UPDATE adressen SET
               woonplaats_id = n.woonplaats_id
-            FROM (SELECT id, woonplaats_id FROM nummers WHERE woonplaats_id != '') AS n
+            FROM (SELECT id, woonplaats_id FROM nummers WHERE woonplaats_id is not NULL) AS n
             WHERE n.id = adressen.nummer_id;
         """)
 
