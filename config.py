@@ -12,8 +12,6 @@ file_bag = 'input/bag.zip'
 # Location of the gemeenten file downloaded from cbs.nl. See readme.MD
 file_gemeenten = 'input/gemeenten.csv'
 
-# Output SQLite database with parsed BAG
-file_db_sqlite = 'output/bag.sqlite'
 # Output DuckDB database with parsed BAG
 file_db_duckdb = 'output/bag.duckdb'
 
@@ -31,7 +29,7 @@ active_only = True
 # If an adressen table is created some BAG tables are no longer needed and can be deleted:
 # nummers, panden, verblijfsobjecten, ligplaatsen and standplaatsen. Set to False if you want to keep these tables.
 # You can also delete these tables afterward using the utils_sqlite_shrink.py script.
-delete_no_longer_needed_bag_tables = True
+delete_no_longer_needed_bag_tables = False
 
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.
@@ -42,7 +40,7 @@ use_short_street_names = False
 # The data is stored in polygon geojson format in the geometry field.
 # And the database size will increase from 1.7GB to 16GB. Or 7GB with delete_no_longer_needed_bag_tables enabled.
 # Parsing will also take a few minutes more.
-parse_geometries = False
+parse_geometries = True
 
 # The BAG sometimes contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is lower than the number below.
@@ -53,6 +51,6 @@ delete_addresses_without_public_spaces_if_less_than = 100
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
 # The psutil module automatically determines the physical CPU core count. If you don't want to install the psutil
 # module, you can just set the number manually.
-cpu_cores_used = psutil.cpu_count(False)
+cpu_cores_used = psutil.cpu_count(True)
 # cpu_cores_used = 8
 
