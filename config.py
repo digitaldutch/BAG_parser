@@ -51,6 +51,6 @@ delete_addresses_without_public_spaces_if_less_than = 100
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
 # The psutil module automatically determines the physical CPU core count. If you don't want to install the psutil
 # module, you can just set the number manually.
-cpu_cores_used = psutil.cpu_count(True)
+cpu_cores_used = psutil.cpu_count(False)
 # cpu_cores_used = 8
 

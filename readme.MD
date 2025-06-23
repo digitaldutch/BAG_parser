@@ -4,15 +4,15 @@
 # Digital Dutch BAG parser
 
 ## TL;DR
-Converts in a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
-en Gebouwen) into a user-friendly, file-based, blazingly fast SQLite database by running a single Python script. 
+Converts in (quite) a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
+en Gebouwen) into a user-friendly, file-based, blazingly fast ~~SQLite~~ **DuckDB** database by running a single Python script. 
 No need to install any dependencies or a database server.
 
-Another oneliner script (see below) will convert this SQLite database to CSV in 15 seconds. 
+Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to CSV _or Parquet_ in ~~15 seconds~~ less than a second. 
 
-## Download the parsed BAG
+~~## Download the parsed BAG
 If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
-our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
+our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.~~
 
 ## About the BAG
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
