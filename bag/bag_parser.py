@@ -452,25 +452,23 @@ class BagParser:
                                  self.db_tag_parent_fields)
             futures.append(future)
 
-        # db_sqlite = DatabaseSqlite()
-        db_sqlite = DatabaseDuckdb()
         match self.tag_name:
             case 'Woonplaats':
-                save_function = db_sqlite.save_woonplaats
+                save_function = self.database.save_woonplaats
             case 'GemeenteWoonplaatsRelatie':
-                save_function = db_sqlite.save_gemeente_woonplaats
+                save_function = self.database.save_gemeente_woonplaats
             case 'OpenbareRuimte':
-                save_function = db_sqlite.save_openbare_ruimte
+                save_function = self.database.save_openbare_ruimte
             case 'Nummeraanduiding':
-                save_function = db_sqlite.save_nummer
+                save_function = self.database.save_nummer
             case 'Pand':
-                save_function = db_sqlite.save_pand
+                save_function = self.database.save_pand
             case 'Verblijfsobject':
-                save_function = db_sqlite.save_verblijfsobject
+                save_function = self.database.save_verblijfsobject
             case 'Ligplaats':
-                save_function = db_sqlite.save_ligplaats
+                save_function = self.database.save_ligplaats
             case 'Standplaats':
-                save_function = db_sqlite.save_standplaats
+                save_function = self.database.save_standplaats
             case _:
                 raise Exception(f'No save function found for tag_name "{self.tag_name}"')
 
