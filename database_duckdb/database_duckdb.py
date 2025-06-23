@@ -1,17 +1,19 @@
-import sqlite3
+import duckdb
 
 import utils
 import config
+import pandas as pd
+import numpy as np
 
 
-class DatabaseSqlite:
+class DatabaseDuckdb:
     connection = None
-    cursor = None
+
+    # cursor = None
 
     def __init__(self):
-        check_same_thread = sqlite3.threadsafety != 3
-        self.connection = sqlite3.connect(config.file_db_sqlite, check_same_thread=check_same_thread)
-        self.cursor = self.connection.cursor()
+        self.connection = duckdb.connect(config.file_db_duckdb)
+        # self.connection = duckdb.connect()
 
     def close(self):
         self.connection.commit()
@@ -21,18 +23,16 @@ class DatabaseSqlite:
         self.connection.commit()
 
     def fetchmany_init(self, sql):
-        self.cursor.execute(sql)
+        self.execute(sql)
 
     def fetchone(self, sql):
-        self.cursor.execute(sql)
-        return self.cursor.fetchone()[0]
+        return self.connection.execute(sql).fetchone()[0]
 
     def fetchall(self, sql):
-        self.cursor.execute(sql)
-        return self.cursor.fetchall()
+        return self.connection.execute(sql).fetchall()
 
     def fetchmany(self, size=1000):
-        return self.cursor.fetchmany(size)
+        return self.connection.fetchmany(size)
 
     def start_transaction(self):
         self.connection.execute("BEGIN TRANSACTION")
@@ -41,14 +41,34 @@ class DatabaseSqlite:
         self.connection.execute("COMMIT TRANSACTION")
 
     def vacuum(self):
-        self.connection.execute("VACUUM")
+        # self.connection.execute("VACUUM")
+        None
 
-    def save_woonplaats(self, data):
+    def save_woonplaats(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
         self.connection.execute(
-            """INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) 
-            VALUES(?, ?, ?, ?, ?, ?)""",
-            (data["id"], data["naam"], data["geometry"], data["status"], data["begindatum_geldigheid"],
-             data["einddatum_geldigheid"]))
+            """INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) select 
+            id as woonplaatsen_id, naam, geometry, status, 
+            begindatum_geldigheid, einddatum_geldigheid
+            FROM df"""
+                                )
+        # sqlvals = ""
+        # for data in datarows:
+        #     sqlvals += "({},'{}','{}','{}','{}','{}'),".format(data["id"],
+        #                                                        str(data["naam"]).replace("'", "''"),
+        #                                                        str(data["geometry"]).replace("'", "''"),
+        #                                                        str(data["status"]).replace("'", "''"),
+        #                                                        data["begindatum_geldigheid"],
+        #                                                        data["einddatum_geldigheid"]
+        #                                                        )
+        # sql = f"""INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid)
+        #     VALUES {sqlvals}
+        #     """
+        # with self.open() as connection:
+        #     connection.execute(sql)
+        #     connection.close()
 
     def save_woonplaats_geometry(self, woonplaatsen):
         self.connection.executemany(
@@ -70,13 +90,21 @@ class DatabaseSqlite:
             "INSERT INTO gemeenten (id, naam, provincie_id) VALUES(?, ?, ?);",
             gemeenten)
 
-    def save_gemeente_woonplaats(self, data):
-        self.connection.execute(
-            """INSERT INTO gemeente_woonplaatsen (gemeente_id, woonplaats_id, status,
-            begindatum_geldigheid, einddatum_geldigheid) 
-            VALUES (?, ?, ?, ?, ?);""",
-            (data["gemeente_id"], data["woonplaats_id"], data["status"], data["begindatum_geldigheid"],
-             data["einddatum_geldigheid"]))
+    def save_gemeente_woonplaats(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        try:
+            self.connection.execute("INSERT INTO gemeente_woonplaatsen SELECT "
+                               "gemeente_id,"
+                               "woonplaats_id,"
+                               "status,"
+                               "begindatum_geldigheid,"
+                               "einddatum_geldigheid"
+                               " FROM df")
+        except Exception as e:
+            print(e, flush=True)
+            # print(df.dtypes, flush=True)
 
     def add_gemeenten_to_woonplaatsen(self):
         self.connection.execute(
@@ -84,108 +112,154 @@ class DatabaseSqlite:
             FROM (SELECT gemeente_id, woonplaats_id FROM gemeente_woonplaatsen) AS gw
             WHERE gw.woonplaats_id = woonplaatsen.woonplaats_id
             """)
-        self.commit()
 
     def save_provincies(self, provincies):
         self.connection.executemany(
             "INSERT INTO provincies (id, naam) VALUES(?, ?)",
             provincies)
-        self.commit()
 
-    def save_openbare_ruimte(self, data):
-        if config.use_short_street_names:
-            data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
-        else:
-            data["naam"] = data["lange_naam"]
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO openbare_ruimten (id, naam, lange_naam, verkorte_naam, type, woonplaats_id, status,
-            begindatum_geldigheid, einddatum_geldigheid)
-              VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """,
-            (data["id"], data["naam"], data["lange_naam"], data["verkorte_naam"], data["type"], data["woonplaats_id"],
-             data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"]))
+    def save_openbare_ruimte(self, datarows):
+        for data in datarows:
+            if config.use_short_street_names:
+                data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
+            else:
+                data["naam"] = data["lange_naam"]
 
-    def save_nummer(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, 
-              openbare_ruimte_id, status, begindatum_geldigheid, einddatum_geldigheid) 
-              VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """,
-            (data["id"], data["postcode"], data["huisnummer"], data["huisletter"], data["toevoeging"],
-             data["woonplaats_id"], data["openbare_ruimte_id"], data["status"], data["begindatum_geldigheid"],
-             data["einddatum_geldigheid"])
-        )
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        self.connection.execute("INSERT OR REPLACE INTO openbare_ruimten SELECT "
+                           "id, "
+                           "naam, "
+                           "lange_naam, "
+                           "verkorte_naam, "
+                           "type, "
+                           "woonplaats_id,"
+                           "status,"
+                           "begindatum_geldigheid,"
+                           "einddatum_geldigheid"
+                           " FROM df")
 
-    def save_pand(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO panden (id, bouwjaar, geometry, status, begindatum_geldigheid, einddatum_geldigheid)
-               VALUES(?, ?, ?, ?, ?, ?)
-            """,
-            (data["id"], data["bouwjaar"], data["geometry"], data["status"], data["begindatum_geldigheid"],
-             data["einddatum_geldigheid"])
-        )
+    def save_nummer(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        try:
+            self.connection.execute("INSERT OR REPLACE INTO nummers SELECT "
+                               "id,postcode,huisnummer,"
+                               "huisletter,"
+                               "toevoeging,"
+                               "woonplaats_id,"
+                               "openbare_ruimte_id,"
+                               "status,"
+                               "begindatum_geldigheid,"
+                               "einddatum_geldigheid"
+                               " FROM df")
+        except Exception as e:
+            print(e, flush=True)
+            # print(df.dtypes, flush=True)
 
-    def save_verblijfsobject(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, rd_x, rd_y, latitude, longitude, 
-            gebruiksdoel, nevenadressen, status, begindatum_geldigheid, einddatum_geldigheid) 
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """,
-            (data["id"], data["nummer_id"], data["pand_id"], data["oppervlakte"], data["rd_x"], data["rd_y"],
-             data["latitude"], data["longitude"], data["gebruiksdoel"], data["nevenadressen"], data["status"],
-             data["begindatum_geldigheid"], data["einddatum_geldigheid"])
-        )
+    def save_pand(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
 
-    def save_ligplaats(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO ligplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, geometry, status,
-                begindatum_geldigheid, einddatum_geldigheid)
-               VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
-             data["geometry"], data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"])
-        )
+        # connection = self.open()
+        self.connection.execute("INSERT OR REPLACE INTO panden SELECT "
+                           "id, bouwjaar, geometry,"
+                           "status,"
+                           "begindatum_geldigheid,"
+                           "einddatum_geldigheid"
+                           " FROM df")
 
-    def save_standplaats(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
-        self.connection.execute(
-            """REPLACE INTO standplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, geometry, status,
-                begindatum_geldigheid, einddatum_geldigheid)
-               VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
-             data["geometry"], data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"])
-        )
+
+    def save_verblijfsobject(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        try:
+            self.connection.execute("INSERT OR REPLACE INTO verblijfsobjecten SELECT "
+                               "id,nummer_id,pand_id,"
+                               "try_cast(oppervlakte as double) as oppervlakte,"
+                               "try_cast(rd_x as double) as rd_x ,"
+                               "try_cast(rd_y as double) as rd_y,"
+                               "try_cast(latitude as double) as latitude,"
+                               "try_cast(longitude as double) as longitude,"
+                               "gebruiksdoel,"
+                               "nevenadressen,"
+                               "status,"
+                               "begindatum_geldigheid,"
+                               "einddatum_geldigheid"
+                               " FROM df")
+        except Exception as e:
+            print(e, flush=True)
+            # print(df.dtypes, flush=True)
+
+    def save_ligplaats(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        try:
+            self.connection.execute("INSERT OR REPLACE INTO ligplaatsen SELECT "
+                               "id,nummer_id,"
+                               "try_cast(rd_x as double) as rd_x ,"
+                               "try_cast(rd_y as double) as rd_y,"
+                               "try_cast(latitude as double) as latitude,"
+                               "try_cast(longitude as double) as longitude,"
+                               "geometry,"
+                               "status,"
+                               "begindatum_geldigheid,"
+                               "einddatum_geldigheid"
+                               " FROM df")
+        except Exception as e:
+            print(e, flush=True)
+            # print(df.dtypes, flush=True)
+
+    def save_standplaats(self, datarows):
+        df = pd.DataFrame(datarows)
+        pd.set_option("future.no_silent_downcasting", True)
+        df = df.replace(r'^\s*$', np.nan, regex=True)
+        try:
+            self.connection.execute("INSERT OR REPLACE INTO standplaatsen SELECT "
+                               "id,nummer_id,"
+                               "try_cast(rd_x as double) as rd_x ,"
+                               "try_cast(rd_y as double) as rd_y,"
+                               "try_cast(latitude as double) as latitude,"
+                               "try_cast(longitude as double) as longitude,"
+                               "geometry,"
+                               "status,"
+                               "begindatum_geldigheid,"
+                               "einddatum_geldigheid"
+                               " FROM df")
+        except Exception as e:
+            print(e, flush=True)
+            # print(df.dtypes, flush=True)
 
     def create_bag_tables(self):
-        self.connection.executescript("""
+        self.connection.execute("""
             DROP TABLE IF EXISTS gemeenten;
-            CREATE TABLE gemeenten (id INTEGER PRIMARY KEY, naam TEXT, provincie_id INTEGER);
+            CREATE TABLE gemeenten (id UBIGINT PRIMARY KEY, naam TEXT, provincie_id UBIGINT);
             
             DROP TABLE IF EXISTS provincies;
-            CREATE TABLE provincies (id INTEGER PRIMARY KEY, naam TEXT);
+            CREATE TABLE provincies (id UBIGINT PRIMARY KEY, naam TEXT);
             
             DROP TABLE IF EXISTS woonplaatsen;
-            CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY AUTOINCREMENT, woonplaats_id INTEGER, naam TEXT, gemeente_id INTEGER, geometry TEXT,
+            CREATE OR REPLACE SEQUENCE seq_wpid START 1;
+            CREATE TABLE woonplaatsen (id UBIGINT PRIMARY KEY DEFAULT NEXTVAL('seq_wpid'), woonplaats_id UBIGINT, naam TEXT, gemeente_id UBIGINT, geometry TEXT,
                 status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
             
             DROP TABLE IF EXISTS gemeente_woonplaatsen;
             CREATE TABLE gemeente_woonplaatsen (
-                gemeente_id INTEGER,
-                woonplaats_id INTEGER,
+                gemeente_id UBIGINT,
+                woonplaats_id UBIGINT,
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE
             );              
 
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
-                type TEXT, woonplaats_id INTEGER, status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
+            CREATE TABLE openbare_ruimten (id UBIGINT PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
+                type TEXT, woonplaats_id UBIGINT, status TEXT, begindatum_geldigheid DATE, einddatum_geldigheid DATE);
 
             DROP TABLE IF EXISTS nummers;
             CREATE TABLE nummers (id TEXT PRIMARY KEY, 
@@ -196,16 +270,16 @@ class DatabaseSqlite:
                 woonplaats_id TEXT, 
                 openbare_ruimte_id TEXT,
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE);
 
             DROP TABLE IF EXISTS panden;
             CREATE TABLE panden (id TEXT PRIMARY KEY, 
                 bouwjaar INTEGER, 
                 geometry TEXT,
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE);
 
             DROP TABLE IF EXISTS verblijfsobjecten;
             CREATE TABLE verblijfsobjecten (
@@ -220,8 +294,8 @@ class DatabaseSqlite:
                 gebruiksdoel TEXT, 
                 nevenadressen TEXT,
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);           
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE);           
 
             DROP TABLE IF EXISTS ligplaatsen;
             CREATE TABLE ligplaatsen (
@@ -233,8 +307,8 @@ class DatabaseSqlite:
                 longitude FLOAT, 
                 geometry TEXT, 
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);              
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE);              
 
             DROP TABLE IF EXISTS standplaatsen;
             CREATE TABLE standplaatsen (
@@ -246,45 +320,27 @@ class DatabaseSqlite:
                 longitude FLOAT, 
                 geometry TEXT, 
                 status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);              
+                begindatum_geldigheid DATE, 
+                einddatum_geldigheid DATE);              
         """)
-        self.connection.commit()
-
-    def create_indices_bag(self):
-        self.connection.executescript("""
-            CREATE INDEX IF NOT EXISTS idx_verblijfsobjecten_nummer_id ON verblijfsobjecten (nummer_id);
-            
-            CREATE INDEX IF NOT EXISTS idx_ligplaatsen_nummer_id ON ligplaatsen (nummer_id);
-
-            CREATE INDEX IF NOT EXISTS idx_standplaatsen_nummer_id ON standplaatsen (nummer_id);
-        """)
-        self.connection.commit()
-
-    def create_indices_adressen(self):
-        # Speed up woonplaatsen queries
-        self.connection.executescript("""
-            CREATE INDEX IF NOT EXISTS idx_adressen_woonplaats_id ON adressen (woonplaats_id)
-        """)
-        self.connection.commit()
 
     def create_adressen_from_bag(self):
 
         utils.print_log('create adressen tabel: import adressen')
-        self.connection.executescript(f"""
+        self.connection.execute(f"""
             DROP TABLE IF EXISTS adressen;
             
             CREATE TABLE adressen (
                 nummer_id TEXT PRIMARY KEY, 
-                nummer_begindatum_geldigheid TEXT, 
-                nummer_einddatum_geldigheid TEXT, 
+                nummer_begindatum_geldigheid DATE, 
+                nummer_einddatum_geldigheid DATE, 
                 pand_id TEXT, 
-                pand_begindatum_geldigheid TEXT, 
-                pand_einddatum_geldigheid TEXT, 
+                pand_begindatum_geldigheid DATE, 
+                pand_einddatum_geldigheid DATE, 
                 verblijfsobject_id TEXT, 
-                gemeente_id INTEGER, 
-                woonplaats_id INTEGER, 
-                openbare_ruimte_id INTEGER, 
+                gemeente_id UBIGINT, 
+                woonplaats_id UBIGINT, 
+                openbare_ruimte_id UBIGINT, 
                 object_type TEXT, 
                 gebruiksdoel TEXT, 
                 postcode TEXT, 
@@ -367,17 +423,17 @@ class DatabaseSqlite:
         utils.print_log('create adressen tabel: import woonplaatsen from nummers')
         self.adressen_update_woonplaatsen_from_nummers()
 
-        utils.print_log('create adressen tabel: create indices')
-        self.create_indices_adressen()
+        # utils.print_log('create adressen tabel: create indices')
+        # self.create_indices_adressen()
 
         utils.print_log('create adressen tabel: update nevenadressen data')
         self.adressen_update_nevenadressen()
 
-        self.connection.commit()
+        # self.connection.commit()
 
     def adressen_import_meerdere_panden(self):
 
-        self.connection.executescript("""
+        self.connection.execute("""
             DROP TABLE IF EXISTS temp_pand_ids;
             
             CREATE TEMP TABLE temp_pand_ids (
@@ -385,7 +441,8 @@ class DatabaseSqlite:
             pand_id TEXT
         );""")
 
-        adressen = self.fetchall("SELECT nummer_id, pand_id FROM verblijfsobjecten WHERE pand_id LIKE '%,%'")
+        adressen = self.fetchall(
+            "SELECT nummer_id, pand_id FROM verblijfsobjecten WHERE pand_id LIKE '%,%'")
 
         parameters = []
         for adres in adressen:
@@ -394,11 +451,12 @@ class DatabaseSqlite:
                 parameters.append([adres[0], pand_id])
 
         sql = "INSERT INTO temp_pand_ids (nummer_id, pand_id) VALUES (?, ?)"
-        self.connection.executemany(sql, parameters)
+        if len(parameters) > 0:
+            self.connection.executemany(sql, parameters)
 
         # Copy bouwjaar and geometry to adressen table. Only last one remains.
         # Maybe add a multi-bouwjaar and multi-geometry option later.
-        self.connection.executescript("""
+        self.connection.execute("""
             UPDATE adressen SET
               geometry = p.geometry,
               bouwjaar = p.bouwjaar
@@ -414,11 +472,8 @@ class DatabaseSqlite:
             WHERE p.nummer_id = adressen.nummer_id;
         """)
 
-        self.connection.commit()
-
-
     def adressen_import_ligplaatsen(self):
-        self.connection.executescript("""
+        self.connection.execute("""
             UPDATE adressen SET
               rd_x = l.rd_x,
               rd_y = l.rd_y,
@@ -431,7 +486,7 @@ class DatabaseSqlite:
         """)
 
     def adressen_import_standplaatsen(self):
-        self.connection.executescript("""
+        self.connection.execute("""
             UPDATE adressen SET
               rd_x = s.rd_x,
               rd_y = s.rd_y,
@@ -444,8 +499,7 @@ class DatabaseSqlite:
         """)
 
     def adressen_update_nevenadressen(self):
-
-        self.connection.executescript("""
+        self.connection.execute("""
             DROP TABLE IF EXISTS nevenadressen;
             
             CREATE TEMP TABLE nevenadressen (
@@ -453,7 +507,8 @@ class DatabaseSqlite:
             hoofd_nummer_id TEXT
         );""")
 
-        adressen = self.fetchall("SELECT nummer_id, nevenadressen FROM verblijfsobjecten WHERE nevenadressen <> ''")
+        adressen = self.fetchall(
+            "SELECT nummer_id, nevenadressen FROM verblijfsobjecten WHERE nevenadressen <> ''")
         parameters = []
         for adres in adressen:
             neven_nummer_ids = adres[1].split(',')
@@ -461,10 +516,10 @@ class DatabaseSqlite:
                 parameters.append([adres[0], neven_id])
 
         sql = "INSERT INTO nevenadressen (hoofd_nummer_id, neven_nummer_id) VALUES (?, ?)"
-        self.connection.executemany(sql, parameters)
-        self.connection.commit()
+        if len(parameters) > 0:
+            self.connection.executemany(sql, parameters)
 
-        self.connection.executescript("""
+        self.connection.execute("""
             UPDATE adressen SET
                 hoofd_nummer_id = n.hoofd_nummer_id,
                 pand_id = n.pand_id,
@@ -497,27 +552,23 @@ class DatabaseSqlite:
             WHERE n.neven_nummer_id = adressen.nummer_id;
         """)
 
-
-
     # woonplaats_id in nummers overrule woonplaats_id van de openbare ruimte.
     def adressen_update_woonplaatsen_from_nummers(self):
-        self.connection.executescript("""
+        self.connection.execute("""
             UPDATE adressen SET
               woonplaats_id = n.woonplaats_id
-            FROM (SELECT id, woonplaats_id FROM nummers WHERE woonplaats_id IS NOT '') AS n
+            FROM (SELECT id, woonplaats_id FROM nummers WHERE woonplaats_id != '') AS n
             WHERE n.id = adressen.nummer_id;
         """)
-        self.commit()
 
     def delete_no_longer_needed_bag_tables(self):
-        self.connection.executescript("""
+        self.connection.execute("""
           DROP TABLE IF EXISTS nummers; 
           DROP TABLE IF EXISTS panden; 
           DROP TABLE IF EXISTS verblijfsobjecten; 
           DROP TABLE IF EXISTS ligplaatsen; 
           DROP TABLE IF EXISTS standplaatsen; 
         """)
-        self.commit()
 
     def adressen_remove_dummy_values(self):
         # The BAG contains dummy values in some fields (bouwjaar, oppervlakte)
@@ -534,7 +585,8 @@ class DatabaseSqlite:
 
         # The BAG contains some buildings with bouwjaar 9999
         last_valid_build_year = 2040
-        panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
+        panden = self.fetchall(
+            f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
         aantal = len(panden)
 
         # Show max first 10 items with invalid build year
@@ -548,14 +600,16 @@ class DatabaseSqlite:
         if text_panden:
             text_panden = f" | panden: {text_panden}"
 
-        utils.print_log(f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}{text_panden}")
+        utils.print_log(
+            f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}{text_panden}")
 
         if aantal > 0:
             utils.print_log(f"fix: verwijder {aantal:n} ongeldige bouwjaren (> {last_valid_build_year})")
             self.connection.execute(f"UPDATE adressen SET bouwjaar=NULL WHERE bouwjaar > {last_valid_build_year}")
 
         # The BAG contains some residences with oppervlakte 999999
-        verblijfsobject_ids = self.fetchall("SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 999999;")
+        verblijfsobject_ids = self.fetchall(
+            "SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 999999;")
         aantal = len(verblijfsobject_ids)
 
         text_ids = ''
@@ -573,7 +627,8 @@ class DatabaseSqlite:
 
         # The BAG contains some residences with oppervlakte 1 (In Amsterdam this is a valid dummy)
         # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-vbo/gebruiksoppervlakte/
-        verblijfsobject_ids = self.fetchall("SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 1;")
+        verblijfsobject_ids = self.fetchall(
+            "SELECT verblijfsobject_id FROM adressen WHERE oppervlakte = 1;")
         aantal = len(verblijfsobject_ids)
         utils.print_log(f"fix: test adressen met ongeldige oppervlakte = 1 (dummy value in Amsterdam): {aantal: n}")
         if aantal > 0:
@@ -581,21 +636,22 @@ class DatabaseSqlite:
             self.connection.execute("UPDATE adressen SET oppervlakte=NULL WHERE oppervlakte = 1;")
 
         # The BAG contains some addresses without valid public space
-        address_count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
-                               " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
+        address_count = self.fetchone(
+            "SELECT COUNT(*) FROM adressen WHERE openbare_ruimte_id IS NULL "
+            " OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten);")
         utils.print_log("fix: test adressen zonder openbare ruimte: " + str(address_count))
 
         # Delete them if not too many
         if (address_count > 0) and (address_count < config.delete_addresses_without_public_spaces_if_less_than):
             utils.print_log(f"fix: verwijder {address_count:n} adressen zonder openbare ruimte")
             self.connection.execute("DELETE FROM adressen WHERE openbare_ruimte_id IS NULL "
-                                    "OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)")
+                               "OR openbare_ruimte_id NOT IN (SELECT id FROM openbare_ruimten)")
 
-        self.connection.commit()
 
     def table_exists(self, table_name):
         # Check if database contains adressen tabel
-        count = self.fetchone(f"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table_name}';")
+        count = self.fetchone(
+            f"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table_name}';")
         return count == 1
 
     def test_bag_adressen(self) -> bool:
@@ -615,7 +671,7 @@ class DatabaseSqlite:
             utils.print_log("SQLite database bevat geen adressen tabel. Importeer BAG eerst.", True)
             quit()
 
-        utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_sqlite}'")
+        utils.print_log(f"start: tests op BAG SQLite database: '{config.file_db_duckdb}'")
 
         sql = "SELECT nummer_begindatum_geldigheid FROM adressen ORDER BY nummer_begindatum_geldigheid DESC LIMIT 1"
         datum = self.fetchone(sql)
@@ -672,22 +728,24 @@ class DatabaseSqlite:
         if is_error: total_error_count += 1
         utils.print_log("test: gemeentenamen moeten in UTF-8 zijn: " + naam, is_error)
 
-        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
+        count = self.fetchone(
+            "SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
         total_error_count += count
         utils.print_log("test: panden zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                               "WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';")
+                                   "WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';")
         total_error_count += count
         utils.print_log("test: ligplaatsen zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                              "WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
+                                   "WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
         total_error_count += count
         utils.print_log("test: standplaatsen zonder locatie: " + str(count), count > 0)
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
-        woonplaats_id = self.fetchone("SELECT woonplaats_id FROM adressen WHERE postcode='1181BN' AND huisnummer=1;")
+        woonplaats_id = self.fetchone(
+            "SELECT woonplaats_id FROM adressen WHERE postcode='1181BN' AND huisnummer=1;")
         is_error = woonplaats_id != 1050
         if is_error: total_error_count += 1
         utils.print_log("test: nummeraanduiding WoonplaatsRef tag. 1181BN-1 ligt in Amstelveen (1050). "

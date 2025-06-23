@@ -8,7 +8,7 @@ import config
 
 import utils
 from bag import rijksdriehoek
-from database_sqlite import DatabaseSqlite
+from database_duckdb import DatabaseDuckdb
 
 
 # def parse_xml_files(files_xml, data_init, object_tag_name, db_fields, db_tag_parent_fields):
@@ -42,7 +42,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         status_ok = (not status_active) or (data['status'] == status_active)
         return status_ok and bag_begindatum_valid(data) and bag_einddatum_valid(data)
 
-    db_sqlite = DatabaseSqlite()
+    # db_sqlite = DatabaseDuckdb()
     data = data_init.copy()
     coordinates_field = None
     has_geometry = False
@@ -57,29 +57,31 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         case 'Woonplaats':
             status_active = 'Woonplaats aangewezen'
             has_geometry = True
-            save_function = db_sqlite.save_woonplaats
+            # save_function = db_sqlite.save_woonplaats
         case 'GemeenteWoonplaatsRelatie':
-            save_function = db_sqlite.save_gemeente_woonplaats
+            None
+            # save_function = db_sqlite.save_gemeente_woonplaats
         case 'OpenbareRuimte':
             status_active = 'Naamgeving uitgegeven'
-            save_function = db_sqlite.save_openbare_ruimte
+            # save_function = db_sqlite.save_openbare_ruimte
         case 'Nummeraanduiding':
             status_active = 'Naamgeving uitgegeven'
-            save_function = db_sqlite.save_nummer
+            # save_function = db_sqlite.save_nummer
         case 'Pand':
-            save_function = db_sqlite.save_pand
+            None
+            # save_function = db_sqlite.save_pand
         case 'Verblijfsobject':
             coordinates_field = 'pos'
             has_geometry = True
-            save_function = db_sqlite.save_verblijfsobject
+            # save_function = db_sqlite.save_verblijfsobject
         case 'Ligplaats':
             coordinates_field = 'geometry'
             has_geometry = True
-            save_function = db_sqlite.save_ligplaats
+            # save_function = db_sqlite.save_ligplaats
         case 'Standplaats':
             coordinates_field = 'geometry'
             has_geometry = True
-            save_function = db_sqlite.save_standplaats
+            # save_function = db_sqlite.save_standplaats
         case _:
             raise Exception(f'No save function found for tag_name "{tag_name}"')
 
@@ -131,12 +133,12 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             db_data = geometry_to_empty(db_data)
 
     # Save data to SQLite
-    for db_row in db_data:
-        save_function(db_row)
+    # for db_row in db_data:
+    #     save_function(db_row)
+    #
+    # db_sqlite.commit()
 
-    db_sqlite.commit()
-
-    return xml_count
+    return {'count':xml_count, 'data':db_data}
 
 
 def geometry_to_wgs84(rows):
@@ -402,7 +404,7 @@ class BagParser:
 
         self.__unzip_xml()
 
-        utils.print_log('convert XML files to SQLite')
+        utils.print_log('convert XML files to DuckDB')
         self.__parse_xml_files()
 
         self.database.commit()
@@ -450,8 +452,39 @@ class BagParser:
                                  self.db_tag_parent_fields)
             futures.append(future)
 
+        # db_sqlite = DatabaseSqlite()
+        db_sqlite = DatabaseDuckdb()
+        match self.tag_name:
+            case 'Woonplaats':
+                save_function = db_sqlite.save_woonplaats
+            case 'GemeenteWoonplaatsRelatie':
+                save_function = db_sqlite.save_gemeente_woonplaats
+            case 'OpenbareRuimte':
+                save_function = db_sqlite.save_openbare_ruimte
+            case 'Nummeraanduiding':
+                save_function = db_sqlite.save_nummer
+            case 'Pand':
+                save_function = db_sqlite.save_pand
+            case 'Verblijfsobject':
+                save_function = db_sqlite.save_verblijfsobject
+            case 'Ligplaats':
+                save_function = db_sqlite.save_ligplaats
+            case 'Standplaats':
+                save_function = db_sqlite.save_standplaats
+            case _:
+                raise Exception(f'No save function found for tag_name "{self.tag_name}"')
+
         for future in futures:
-            count_file_xml = future.result()
+            result = future.result()
+            count_file_xml = result['count']
+
+            # Save data to SQLite
+            # for db_row in result['data']:
+            #     save_function(db_row)
+            # db_sqlite.commit()
+            # print(result['data'])
+            save_function(result['data'])
+
             self.count_xml_files += 1
             self.count_xml_tags += count_file_xml
             self.__update_xml_status()

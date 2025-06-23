@@ -5,7 +5,7 @@ import time
 
 import utils
 import config
-from database_sqlite import DatabaseSqlite
+from database_duckdb import DatabaseDuckdb
 from bag.bag_parser import BagParser
 from bag.gemeente_parser import GemeentenParser
 
@@ -31,17 +31,20 @@ def main():
 
     utils.unzip_files_multithreaded(config.file_bag, temp_folder_name)
 
-    db_sqlite = DatabaseSqlite()
+    # db_sqlite = DatabaseSqlite()
+    db_duckdb = DatabaseDuckdb()
 
-    utils.print_log("create BAG SQLite database structure")
-    db_sqlite.create_bag_tables()
+    # utils.print_log("create BAG SQLite database structure")
+    # db_sqlite.create_bag_tables()
+    utils.print_log("create BAG DuckDB database structure")
+    db_duckdb.create_bag_tables()
 
     # parse gemeenten csv
-    g_parser = GemeentenParser(db_sqlite)
+    g_parser = GemeentenParser(db_duckdb)
     g_parser.parse()
 
     # parse BAG
-    b_parser = BagParser(db_sqlite)
+    b_parser = BagParser(db_duckdb)
 
     b_parser.parse('Woonplaats')
     b_parser.parse('GemeenteWoonplaatsRelatie')
@@ -52,8 +55,8 @@ def main():
     b_parser.parse('Ligplaats')
     b_parser.parse('Standplaats')
 
-    utils.print_log('create BAG table indices')
-    db_sqlite.create_indices_bag()
+    # utils.print_log('create BAG table indices')
+    # db_sqlite.create_indices_bag()
 
     b_parser.add_gemeenten_into_woonplaatsen()
 
@@ -61,20 +64,19 @@ def main():
         if not config.active_only:
             utils.print_log('addresses table is only created if active_only=True in config', True)
         else:
-            db_sqlite.create_adressen_from_bag()
-            db_sqlite.adressen_remove_dummy_values()
-            db_sqlite.test_bag_adressen()
+            db_duckdb.create_adressen_from_bag()
+            db_duckdb.adressen_remove_dummy_values()
+            db_duckdb.test_bag_adressen()
 
             if config.delete_no_longer_needed_bag_tables:
                 utils.print_log('delete no longer needed BAG tables')
-                db_sqlite.delete_no_longer_needed_bag_tables()
+                db_duckdb.delete_no_longer_needed_bag_tables()
 
     utils.print_log('cleaning up: vacuum')
-    db_sqlite.vacuum()
 
     utils.empty_folder(temp_folder_name)
 
-    db_sqlite.close()
+    db_duckdb.close()
 
     utils.print_log(f"ready: BAG XML to sqlite database '{config.file_db_sqlite}'")
 
