@@ -1,8 +1,7 @@
 import utils
-from database_sqlite import DatabaseSqlite
+from database_duckdb import DatabaseDuckdb
 
+db_duckdb = DatabaseDuckdb()
 
-db_sqlite = DatabaseSqlite()
-
-db_sqlite.test_bag_adressen()
+db_duckdb.test_bag_adressen()
 

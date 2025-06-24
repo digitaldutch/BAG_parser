@@ -1,13 +1,13 @@
 import utils
-from database_sqlite import DatabaseSqlite
+from database_duckdb import DatabaseDuckdb
 
-db_sqlite = DatabaseSqlite()
+db_duckdb = DatabaseDuckdb()
 
 utils.print_log('Delete full BAG tables')
-db_sqlite.delete_no_longer_needed_bag_tables()
+db_duckdb.delete_no_longer_needed_bag_tables()
 
 utils.print_log('cleaning up: vacuum')
-db_sqlite.commit()
-db_sqlite.vacuum()
+db_duckdb.commit()
+db_duckdb.vacuum()
 
 utils.print_log('ready')
