@@ -8,7 +8,7 @@ Converts in (quite) a few minutes the big, complex and hard to read XML Dutch ad
 en Gebouwen) into a user-friendly, file-based, blazingly fast ~~SQLite~~ **DuckDB** database by running a single Python script. 
 No need to install any dependencies or a database server.
 
-Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to CSV _or Parquet_ in ~~15 seconds~~ less than a second. 
+Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to CSV _(or Parquet or JSON)_ in ~~15 seconds~~ seconds. 
 
 ~~## Download the parsed BAG
 If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
@@ -25,12 +25,12 @@ expect named
  [Rijksdriehoekscoördinaten](https://nl.wikipedia.org/wiki/Rijksdriehoeksco%C3%B6rdinaten)😲. 
 
 ## What this parser does
-This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
+This Python utility parses the BAG database and converts it into a clean, easy to read & use DuckDB database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
 to standard WGS84 latitude and longitude coordinates. Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
 Construction year, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
-table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
+table. The DuckDB database can be used directly as a source to generate a *.csv, *.parquet or *.json file or to update your own addresses 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
@@ -49,8 +49,8 @@ databases. There are a couple of options available in the [config.py](config.py)
 * Set your options in [config.py](config.py)
 * Run `import_bag.py`
 * Drink a cup of coffee for a few minutes ☕😎 while watching the progress bar.
-* Open the SQLite database with your favorite tool. I like [DBeaver](https://dbeaver.io/).
-Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
+* Open the DuckDB database with your favorite tool. I like the direct [DuckDB CLI](https://duckdb.org/docs/installation/), although a tool like [DBeaver](https://dbeaver.io/) works as well.
+Here's an example query on DuckDB database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
 SELECT
   a.postcode,
@@ -76,35 +76,54 @@ FROM adressen a
 WHERE postcode = '2514GL'
   AND huisnummer = 68;
 ```
-* When done parsing, use [export_to_csv.py](export_to_csv.py) to create a *.csv file. This file has several command line options (see below). 
-These conversion functions are easy to customize. 
-I myself use one (not on GitHub) to pump the SQLite data into a live Firebird database.
+This should result in something like:
+```commandline
+┌──────────┬────────────┬────────────┬────────────┬───────────────┬───────────────┬──────────────┬──────────┬──────────┬───────────┬──────────┬───────────┬──────────────────┬─────────────────────────┬─────────────────┐
+│ postcode │ huisnummer │ toevoeging │   straat   │   gemeente    │  woonplaats   │  provincie   │ bouwjaar │ latitude │ longitude │   rd_x   │   rd_y    │ vloeroppervlakte │      gebruiksdoel       │ hoofd_nummer_id │
+│ varchar  │   int32    │  varchar   │  varchar   │    varchar    │    varchar    │   varchar    │  int32   │  float   │   float   │  float   │   float   │      float       │         varchar         │     varchar     │
+├──────────┼────────────┼────────────┼────────────┼───────────────┼───────────────┼──────────────┼──────────┼──────────┼───────────┼──────────┼───────────┼──────────────────┼─────────────────────────┼─────────────────┤
+│ 2514GL   │     68     │ NULL       │ Noordeinde │ 's-Gravenhage │ 's-Gravenhage │ Zuid-Holland │   1814   │ 52.08101 │ 4.3066735 │ 80933.69 │ 455299.28 │     11923.0      │ overige gebruiksfunctie │ NULL            │
+└──────────┴────────────┴────────────┴────────────┴───────────────┴───────────────┴──────────────┴──────────┴──────────┴───────────┴──────────┴───────────┴──────────────────┴─────────────────────────┴─────────────────┘
+Run Time (s): real 0.067 user 0.620957 sys 0.034688
+```
 
+* When done parsing, use [export.py](export.py) to create a *.csv, *.parquet or *.json file. This file has several command line options (see below). 
+These conversion functions are easy to customize. 
+Parquet is a very common format these days for importing data into other tools.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
 Parses the original BAG file and transforms it into an SQLite database. Takes about 6 minutes to complete
 on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
-### [export_to_csv.py](export_to_csv.py)
-Exports the addresses in SQLite database to a *.csv file. By default, only the addresses and
-postcode data are exported (~15 seconds). Use the command options below for more output formats.  
+### [export.py](export.py)
+Exports the addresses in DuckDB database to a *.csv, *.parquet or *.json file. By default, only the addresses and
+postcode data are exported (~1 second). Use the command options below for more output formats.  
 
 -a, --all  
 Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
-~40s
+~3s (CSV)
+~1.6s (Parquet)
+~9s (JSON)
 
 -h, --help  
 show the help information message
 
 -p4, --postcode4  
-Export statistics of 4 character postal code groups. (e.g. 1000). ~10s 
+Export statistics of 4 character postal code groups. (e.g. 1000). ~0.5s 
 
 -p5, --postcode5  
-Export statistics of 5 character postal code groups (e.g. 1000A). ~10s
+Export statistics of 5 character postal code groups (e.g. 1000A). ~0.5s
 
 -p6, --postcode6  
-Export statistics of 6 character postal code groups (e.g. 1000AA). ~10s
+Export statistics of 6 character postal code groups (e.g. 1000AA). ~0.5s
+
+--parquet
+Export to a parquet file rather than the default CSV.
+
+--json
+Export to a JSON file rather than the default CSV.
+
 
 ### [test_sqlite_db.py](test_sqlite_db.py)
 Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.

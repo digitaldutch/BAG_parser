@@ -17,17 +17,32 @@ parser.add_argument('-p5', '--postcode5', action='store_true', help=helpText)
 helpText = "Export statistics of 6 character postal code groups (e.g. 1000AA)"
 parser.add_argument('-p6', '--postcode6', action='store_true', help=helpText)
 
+helpText = "Export to parquet rather than CSV"
+parser.add_argument('--parquet', action='store_true', help=helpText)
+
+helpText = "Export to JSON rather than CSV"
+parser.add_argument('--json', action='store_true', help=helpText)
+
 args = parser.parse_args()
 
-csv_exporter = Exporter()
+exporter = Exporter()
+
+ext = 'csv'
+export_options = "(HEADER, DELIMITER ',')"
+if args.parquet:
+    ext = 'parquet'
+    export_options = "(FORMAT parquet)"
+elif args.json:
+    ext = 'json'
+    export_options = "(ARRAY)"
 
 if args.all:
-    csv_exporter.export_to_csv('output/adressen_all_data.csv')
+    exporter.export(f'output/adressen_all_data.{ext}', export_options)
 elif args.postcode4:
-    csv_exporter.export_to_csv_postcode4_stats('output/adressen_p4_stats.csv')
+    exporter.export_postcode4_stats(f'output/adressen_p4_stats.{ext}', export_options)
 elif args.postcode5:
-    csv_exporter.export_to_csv_postcode5_stats('output/adressen_p5_stats.csv')
+    exporter.export_postcode5_stats(f'output/adressen_p5_stats.{ext}', export_options)
 elif args.postcode6:
-    csv_exporter.export_to_csv_postcode6_stats('output/adressen_p6_stats.csv')
+    exporter.export_postcode6_stats(f'output/adressen_p6_stats.{ext}', export_options)
 else:
-    csv_exporter.export_to_csv_postcode('output/adressen_postcodes.csv')
+    exporter.export_postcode(f'output/adressen_postcodes.{ext}', export_options)
