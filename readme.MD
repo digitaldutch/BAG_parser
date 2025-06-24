@@ -93,8 +93,8 @@ Parquet is a very common format these days for importing data into other tools.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into an SQLite database. Takes about 6 minutes to complete
-on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
+Parses the original BAG file and transforms it into a DuckDB database. Takes about 12 minutes to complete
+on a MacBook Pro (M1 Pro), roughly 20 minutes on an aging AMD 5 2600; or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export.py](export.py)
 Exports the addresses in DuckDB database to a *.csv, *.parquet or *.json file. By default, only the addresses and
@@ -126,12 +126,13 @@ Export to a JSON file rather than the default CSV.
 
 
 ### [test_sqlite_db.py](test_sqlite_db.py)
-Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
+Checks the DuckDB database for info and errors. `import_bag.py` also performs these tests after parsing.
 
 ### [utils_sqlite_shrink.py](utils_sqlite_shrink.py)
-Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
+Reduces the DuckDB database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
 The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to `True` in [config.py](config.py).
+Note that this currently does **not** reduce the file size of the database.
 
 ## Adressen table
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 

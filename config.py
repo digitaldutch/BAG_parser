@@ -40,7 +40,7 @@ use_short_street_names = False
 # The data is stored in polygon geojson format in the geometry field.
 # And the database size will increase from 1.7GB to 16GB. Or 7GB with delete_no_longer_needed_bag_tables enabled.
 # Parsing will also take a few minutes more.
-parse_geometries = True
+parse_geometries = False
 
 # The BAG sometimes contains addresses without a valid public space id. Generally those are invalid addresses.
 # They will be automatically deleted if the total number of invalid addresses is lower than the number below.
