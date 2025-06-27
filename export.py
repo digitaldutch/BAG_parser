@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 from exporter import Exporter
 
-parser = ArgumentParser(description='Export addresses in SQLite database to a *.csv file')
+parser = ArgumentParser(description='Export addresses in DuckDB database to a CSV, Parquet or JSON file')
 
 helpText = ("Export all data including year of construction, latitude, longitude, floor area and intended use of "
             "buildings")
