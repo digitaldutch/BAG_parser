@@ -17,9 +17,9 @@ No need to install any dependencies or a database server.
 
 Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to ~~CSV~~ Parquet_(or CSV or JSON)_ in ~~15 seconds~~ seconds. 
 
-~~## Download the parsed BAG
-If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
-our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.~~
+## Download the parsed BAG
+If you don't want to run the script yourself, download the latest BAG in ~~SQLite or CSV~~ parquet format from
+the [releases](https://github.com/poorting/BAG_parser/releases) section.
 
 ## About the BAG
 The Dutch public addresses and buildings database (BAG or Basisregistratie Adressen en Gebouwen) is freely downloadable
