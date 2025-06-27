@@ -20,29 +20,31 @@ class Exporter:
         sqlcmd = f"COPY ({sql}) TO '{output_filename}' {export_options};"
         self.database.connection.execute(sqlcmd)
 
-    def export(self, output_filename, export_options):
-        sql = """
-            SELECT
-              o.naam                       AS straat,
-              a.huisnummer,
-              a.huisletter || a.toevoeging AS toevoeging,
-              a.postcode,
-              g.naam                       AS gemeente,
-              w.naam                       AS woonplaats,
-              p.naam                       AS provincie,
-              a.bouwjaar,
-              a.rd_x,
-              a.rd_y,
-              a.latitude,
-              a.longitude,
-              a.oppervlakte                AS vloeroppervlakte,
-              a.gebruiksdoel,
-              a.hoofd_nummer_id
-            FROM adressen a
-              LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
-              LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
-              LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id
-              LEFT JOIN provincies p       ON g.provincie_id       = p.id"""
+    def export(self, output_filename, export_options, export_geometry=False):
+        exp_geom = "a.geometry AS geometry" if export_geometry else ""
+        sql = f"""
+                SELECT
+                  o.naam                       AS straat,
+                  a.huisnummer,
+                  a.huisletter || a.toevoeging AS toevoeging,
+                  a.postcode,
+                  g.naam                       AS gemeente,
+                  w.naam                       AS woonplaats,
+                  p.naam                       AS provincie,
+                  a.bouwjaar,
+                  a.rd_x,
+                  a.rd_y,
+                  a.latitude,
+                  a.longitude,
+                  a.oppervlakte                AS vloeroppervlakte,
+                  a.gebruiksdoel,
+                  a.hoofd_nummer_id,
+                  {exp_geom}
+                FROM adressen a
+                  LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
+                  LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
+                  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id
+                  LEFT JOIN provincies p       ON g.provincie_id       = p.id"""
 
         self.__export(output_filename, export_options, sql)
 
