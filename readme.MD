@@ -3,12 +3,19 @@
 
 # Digital Dutch BAG parser
 
+Original is by [digitaldutch](https://github.com/digitaldutch/BAG_parser) and uses SQLite as a database. I simply changed it to use DuckDB instead for the following reasons:
+* DuckDB is way faster in analysis (but slower in ingesting)
+* Very nice integration with Python (e.g. returning results as a dataframe)
+* Native ability to export to Parquet, CSV and JSON (see export section)
+  * Really, you should use Parquet over CSV...
+* Because why not? :-)
+
 ## TL;DR
 Converts in (quite) a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
 en Gebouwen) into a user-friendly, file-based, blazingly fast ~~SQLite~~ **DuckDB** database by running a single Python script. 
 No need to install any dependencies or a database server.
 
-Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to CSV _(or Parquet or JSON)_ in ~~15 seconds~~ seconds. 
+Another oneliner script (see below) will convert this ~~SQLite~~ **DuckDB** database to ~~CSV~~ Parquet_(or CSV or JSON)_ in ~~15 seconds~~ seconds. 
 
 ~~## Download the parsed BAG
 If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
@@ -42,12 +49,19 @@ databases. There are a couple of options available in the [config.py](config.py)
   `git clone https://github.com/digitaldutch/BAG_parser`   
   Update to the latest version:  
   `git pull https://github.com/digitaldutch/BAG_parser`
+* Create a Python Virtual Environment with the required modules:
+``` 
+python3 -m venv venv
+source venv/bin/activate
+pip install wheel
+pip install -r requirements.txt
+```
 * Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/gratis-download-bag-extract)
   or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
   and save the file as `bag.zip` in the `input` folder.
 * The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
 * Set your options in [config.py](config.py)
-* Run `import_bag.py`
+* Run `./import_bag.py`
 * Drink a cup of coffee for a few minutes ☕😎 while watching the progress bar.
 * Open the DuckDB database with your favorite tool. I like the direct [DuckDB CLI](https://duckdb.org/docs/installation/), although a tool like [DBeaver](https://dbeaver.io/) works as well.
 Here's an example query on DuckDB database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
@@ -87,9 +101,9 @@ This should result in something like:
 Run Time (s): real 0.067 user 0.620957 sys 0.034688
 ```
 
-* When done parsing, use [export.py](export.py) to create a *.csv, *.parquet or *.json file. This file has several command line options (see below). 
+* When done parsing, use [export.py](export.py) to create a *.parquet, *.csv or *.json file. This file has several command line options (see below). 
 These conversion functions are easy to customize. 
-Parquet is a very common format these days for importing data into other tools.
+Parquet is a very common (binary, compressed, self-describing) format these days for importing data into other tools.
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
@@ -97,33 +111,27 @@ Parses the original BAG file and transforms it into a DuckDB database. Takes abo
 on a MacBook Pro (M1 Pro), roughly 20 minutes on an aging AMD 5 2600; or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export.py](export.py)
-Exports the addresses in DuckDB database to a *.csv, *.parquet or *.json file. By default, only the addresses and
+Exports the addresses in DuckDB database to a *.parquet (default), *.csv or *.json file. By default, only the addresses and
 postcode data are exported (~1 second). Use the command options below for more output formats.  
 
--a, --all  
-Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
-~3s (CSV)
-~1.6s (Parquet)
-~9s (JSON)
+```
+./export.py -h   
+usage: export.py [-h] [-a] [-ag] [-p4] [-p5] [-p6] [--csv] [--json]
 
--h, --help  
-show the help information message
+Export addresses in DuckDB database to a Parquet, CSV or JSON file
 
--p4, --postcode4  
-Export statistics of 4 character postal code groups. (e.g. 1000). ~0.5s 
+options:
+  -h, --help        show this help message and exit
+  -a, --all         Export all data including year of construction, latitude, longitude, floor area and intended use
+                    of buildings
+  -ag, --geometry   Export all data as above, but including geometry as well (if generated)
+  -p4, --postcode4  Export statistics of 4 character postal code groups (e.g. 1000)
+  -p5, --postcode5  Export statistics of 5 character postal code groups (e.g. 1000A)
+  -p6, --postcode6  Export statistics of 6 character postal code groups (e.g. 1000AA)
+  --csv             Export to CSV rather than Parquet
+  --json            Export to JSON rather than Parquet
 
--p5, --postcode5  
-Export statistics of 5 character postal code groups (e.g. 1000A). ~0.5s
-
--p6, --postcode6  
-Export statistics of 6 character postal code groups (e.g. 1000AA). ~0.5s
-
---parquet
-Export to a parquet file rather than the default CSV.
-
---json
-Export to a JSON file rather than the default CSV.
-
+```
 
 ### [test_sqlite_db.py](test_sqlite_db.py)
 Checks the DuckDB database for info and errors. `import_bag.py` also performs these tests after parsing.
