@@ -46,9 +46,9 @@ databases. There are a couple of options available in the [config.py](config.py)
 ## Usage
 * Download or use git (recommended as updates are easier) to download the BAG parser.   
   Git command for initial checkout:  
-  `git clone https://github.com/digitaldutch/BAG_parser`   
+  `git clone https://github.com/poorting/BAG_parser`   
   Update to the latest version:  
-  `git pull https://github.com/digitaldutch/BAG_parser`
+  `git pull https://github.com/poorting/BAG_parser`
 * Create a Python Virtual Environment with the required modules:
 ``` 
 python3 -m venv venv
@@ -56,6 +56,13 @@ source venv/bin/activate
 pip install wheel
 pip install -r requirements.txt
 ```
+_Note: You might get an error message at the first step (most likely to happen if you're on Debian). In which case the venv python package is not installed yet. In that case install it first by doing:_
+
+```
+sudo apt install python3-venv 
+```
+_Then follow the steps for creating the virtual environment again._
+
 * Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/gratis-download-bag-extract)
   or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
   and save the file as `bag.zip` in the `input` folder.
