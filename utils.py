@@ -147,7 +147,7 @@ def bag_date_today():
     return datetime.today().strftime("%Y-%m-%d")
 
 
-def bag_geometry_to_wgs_geojson(geometry):
+def bag_geometry_to_wgs_geojson(geometry, geometry_points=2):
     geometries = geometry.split(",")
     coordinates_wgs = ''
     for linear_ring in geometries:
@@ -156,11 +156,19 @@ def bag_geometry_to_wgs_geojson(geometry):
         linear_ring = linear_ring.split()
         ring_coordinates_wgs = ''
         it = iter(linear_ring)
-        for x, y in zip(it, it):
-            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
-            if ring_coordinates_wgs:
-                ring_coordinates_wgs += ','
-            ring_coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
+
+        if geometry_points == 2:
+            for x, y in zip(it, it):
+                lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
+                if ring_coordinates_wgs:
+                    ring_coordinates_wgs += ','
+                ring_coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
+        else:
+            for x, y, z in zip(it, it, it):
+                lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
+                if ring_coordinates_wgs:
+                    ring_coordinates_wgs += ','
+                ring_coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
 
         if coordinates_wgs:
             coordinates_wgs += ','

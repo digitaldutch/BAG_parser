@@ -46,6 +46,9 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     data = data_init.copy()
     coordinates_field = None
     has_geometry = False
+    # 2 or 3 coordinates for geometry?
+    # (Panden use 3, ligplaats & standplaats use 2)
+    geometry_points = 2
     status_active = None
     # Cache data in memory to perform saving to SQLite in a single loop. SQLite is not good at threading, so
     # it needs to perform as quickly as possible
@@ -68,6 +71,8 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             status_active = 'Naamgeving uitgegeven'
             # save_function = db_sqlite.save_nummer
         case 'Pand':
+            has_geometry = True
+            geometry_points = 3
             None
             # save_function = db_sqlite.save_pand
         case 'Verblijfsobject':
@@ -128,7 +133,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
 
     if has_geometry:
         if config.parse_geometries:
-            db_data = geometry_to_wgs84(db_data)
+            db_data = geometry_to_wgs84(db_data, geometry_points)
         else:
             db_data = geometry_to_empty(db_data)
 
@@ -141,9 +146,9 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     return {'count':xml_count, 'data':db_data}
 
 
-def geometry_to_wgs84(rows):
+def geometry_to_wgs84(rows, geometry_points=2):
     for i, row in enumerate(rows):
-        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
+        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'], geometry_points)
 
     return rows
 
