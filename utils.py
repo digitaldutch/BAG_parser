@@ -150,6 +150,9 @@ def bag_date_today():
 def bag_geometry_to_wgs_geojson(geometry, geometry_points=2):
     geometries = geometry.split(",")
     coordinates_wgs = ''
+    # if len(geometries) > 1:
+    #     print()
+    #     print(geometries)
     for linear_ring in geometries:
         # Remove [] begin and end characters
         linear_ring = linear_ring[1:-1]
@@ -173,7 +176,13 @@ def bag_geometry_to_wgs_geojson(geometry, geometry_points=2):
         if coordinates_wgs:
             coordinates_wgs += ','
         coordinates_wgs += '[' + ring_coordinates_wgs + ']'
+        # if len(geometries) > 1:
+        #     print(f"coord_wgs: {coordinates_wgs}")
 
+    coordinates_wgs = '{"type":"Polygon", "coordinates":[' + coordinates_wgs + ']}'
+    # if len(geometries)>1:
+    #     print()
+    #     print(coordinates_wgs)
     return coordinates_wgs
 
 

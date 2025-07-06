@@ -44,32 +44,27 @@ class DatabaseDuckdb:
         # self.connection.execute("VACUUM")
         None
 
+    def post_process(self, sql):
+        self.connection.execute(sql)
+
     def save_woonplaats(self, datarows):
         df = pd.DataFrame(datarows)
         pd.set_option("future.no_silent_downcasting", True)
         df = df.replace(r'^\s*$', np.nan, regex=True)
+        # print(df['geometry'])
+        # print(df['geometry'][0])
+
         self.connection.execute(
             """INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) select 
-            id as woonplaatsen_id, naam, geometry, status, 
-            begindatum_geldigheid, einddatum_geldigheid
+            id as woonplaatsen_id,
+            naam,
+            -- geometry,
+            st_geomfromgeojson(geometry::json) as geometry,
+            status, 
+            begindatum_geldigheid,
+            einddatum_geldigheid
             FROM df"""
                                 )
-        # sqlvals = ""
-        # for data in datarows:
-        #     sqlvals += "({},'{}','{}','{}','{}','{}'),".format(data["id"],
-        #                                                        str(data["naam"]).replace("'", "''"),
-        #                                                        str(data["geometry"]).replace("'", "''"),
-        #                                                        str(data["status"]).replace("'", "''"),
-        #                                                        data["begindatum_geldigheid"],
-        #                                                        data["einddatum_geldigheid"]
-        #                                                        )
-        # sql = f"""INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid)
-        #     VALUES {sqlvals}
-        #     """
-        # with self.open() as connection:
-        #     connection.execute(sql)
-        #     connection.close()
-
     def save_woonplaats_geometry(self, woonplaatsen):
         self.connection.executemany(
             "UPDATE woonplaatsen SET geometry=? WHERE id=?;",
@@ -166,7 +161,9 @@ class DatabaseDuckdb:
 
         # connection = self.open()
         self.connection.execute("INSERT OR REPLACE INTO panden SELECT "
-                           "id, bouwjaar, geometry,"
+                           "id, bouwjaar, "
+                           "st_geomfromgeojson(geometry::json) as geometry,"
+                           # "geometry,"
                            "status,"
                            "begindatum_geldigheid,"
                            "einddatum_geldigheid"
@@ -177,6 +174,8 @@ class DatabaseDuckdb:
         df = pd.DataFrame(datarows)
         pd.set_option("future.no_silent_downcasting", True)
         df = df.replace(r'^\s*$', np.nan, regex=True)
+        # create geojson POINT for location as well
+        # df['lon_lat'] = df.apply(lambda row: f'{{"type":"Point", "coordinates":[{row.longitude},{row.latitude}]}}', axis=1)
         try:
             self.connection.execute("INSERT OR REPLACE INTO verblijfsobjecten SELECT "
                                "id,nummer_id,pand_id,"
@@ -185,6 +184,8 @@ class DatabaseDuckdb:
                                "try_cast(rd_y as double) as rd_y,"
                                "try_cast(latitude as double) as latitude,"
                                "try_cast(longitude as double) as longitude,"
+                               #"st_geomfromgeojson(lon_lat::json) as lon_lat,"
+                               "NULL as lon_lat,"
                                "gebruiksdoel,"
                                "nevenadressen,"
                                "status,"
@@ -199,6 +200,8 @@ class DatabaseDuckdb:
         df = pd.DataFrame(datarows)
         pd.set_option("future.no_silent_downcasting", True)
         df = df.replace(r'^\s*$', np.nan, regex=True)
+        # create geojson POINT for location as well
+        # df['lon_lat'] = df.apply(lambda row: f'{{"type":"Point", "coordinates":[{row.longitude},{row.latitude}]}}', axis=1)
         try:
             self.connection.execute("INSERT OR REPLACE INTO ligplaatsen SELECT "
                                "id,nummer_id,"
@@ -206,7 +209,9 @@ class DatabaseDuckdb:
                                "try_cast(rd_y as double) as rd_y,"
                                "try_cast(latitude as double) as latitude,"
                                "try_cast(longitude as double) as longitude,"
-                               "geometry,"
+                               "NULL as lon_lat,"
+                               # "geometry,"
+                               "st_geomfromgeojson(geometry::json) as geometry,"
                                "status,"
                                "begindatum_geldigheid,"
                                "einddatum_geldigheid"
@@ -219,6 +224,8 @@ class DatabaseDuckdb:
         df = pd.DataFrame(datarows)
         pd.set_option("future.no_silent_downcasting", True)
         df = df.replace(r'^\s*$', np.nan, regex=True)
+        # create geojson POINT for location as well
+        # df['lon_lat'] = df.apply(lambda row: f'{{"type":"Point", "coordinates":[{row.longitude},{row.latitude}]}}', axis=1)
         try:
             self.connection.execute("INSERT OR REPLACE INTO standplaatsen SELECT "
                                "id,nummer_id,"
@@ -226,7 +233,9 @@ class DatabaseDuckdb:
                                "try_cast(rd_y as double) as rd_y,"
                                "try_cast(latitude as double) as latitude,"
                                "try_cast(longitude as double) as longitude,"
-                               "geometry,"
+                               "NULL as lon_lat,"
+                               # "geometry,"
+                               "st_geomfromgeojson(geometry::json) as geometry,"
                                "status,"
                                "begindatum_geldigheid,"
                                "einddatum_geldigheid"
@@ -236,6 +245,14 @@ class DatabaseDuckdb:
             # print(df.dtypes, flush=True)
 
     def create_bag_tables(self):
+        # install and load extensions
+        self.connection.execute("""
+        install spatial;
+        load spatial;
+        install json;
+        load json;
+        """)
+
         self.connection.execute("""
             DROP TABLE IF EXISTS gemeenten;
             CREATE TABLE gemeenten (id UBIGINT PRIMARY KEY, naam TEXT, provincie_id UBIGINT);
@@ -245,8 +262,15 @@ class DatabaseDuckdb:
             
             DROP TABLE IF EXISTS woonplaatsen;
             CREATE OR REPLACE SEQUENCE seq_wpid START 1;
-            CREATE TABLE woonplaatsen (id UBIGINT PRIMARY KEY DEFAULT NEXTVAL('seq_wpid'), woonplaats_id UBIGINT, naam TEXT, gemeente_id UBIGINT, geometry TEXT,
-                status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
+            CREATE TABLE woonplaatsen (
+                id UBIGINT PRIMARY KEY DEFAULT NEXTVAL('seq_wpid'),
+                woonplaats_id UBIGINT,
+                naam TEXT,
+                gemeente_id UBIGINT,
+                geometry GEOMETRY,
+                status TEXT,
+                begindatum_geldigheid TEXT,
+                einddatum_geldigheid TEXT);
             
             DROP TABLE IF EXISTS gemeente_woonplaatsen;
             CREATE TABLE gemeente_woonplaatsen (
@@ -258,8 +282,16 @@ class DatabaseDuckdb:
             );              
 
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id UBIGINT PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
-                type TEXT, woonplaats_id UBIGINT, status TEXT, begindatum_geldigheid DATE, einddatum_geldigheid DATE);
+            CREATE TABLE openbare_ruimten (
+                id UBIGINT PRIMARY KEY,
+                naam TEXT,
+                lange_naam TEXT,
+                verkorte_naam TEXT, 
+                type TEXT,
+                woonplaats_id UBIGINT,
+                status TEXT,
+                begindatum_geldigheid DATE,
+                einddatum_geldigheid DATE);
 
             DROP TABLE IF EXISTS nummers;
             CREATE TABLE nummers (id TEXT PRIMARY KEY, 
@@ -276,7 +308,7 @@ class DatabaseDuckdb:
             DROP TABLE IF EXISTS panden;
             CREATE TABLE panden (id TEXT PRIMARY KEY, 
                 bouwjaar INTEGER, 
-                geometry TEXT,
+                geometry GEOMETRY,
                 status TEXT, 
                 begindatum_geldigheid DATE, 
                 einddatum_geldigheid DATE);
@@ -291,6 +323,7 @@ class DatabaseDuckdb:
                 rd_y DOUBLE, 
                 latitude DOUBLE, 
                 longitude DOUBLE, 
+                lon_lat GEOMETRY, 
                 gebruiksdoel TEXT, 
                 nevenadressen TEXT,
                 status TEXT, 
@@ -304,8 +337,9 @@ class DatabaseDuckdb:
                 rd_x DOUBLE, 
                 rd_y DOUBLE, 
                 latitude DOUBLE, 
-                longitude DOUBLE, 
-                geometry TEXT, 
+                longitude DOUBLE,
+                lon_lat GEOMETRY, 
+                geometry GEOMETRY, 
                 status TEXT, 
                 begindatum_geldigheid DATE, 
                 einddatum_geldigheid DATE);              
@@ -318,7 +352,8 @@ class DatabaseDuckdb:
                 rd_y DOUBLE, 
                 latitude DOUBLE, 
                 longitude DOUBLE, 
-                geometry TEXT, 
+                lon_lat GEOMETRY, 
+                geometry GEOMETRY, 
                 status TEXT, 
                 begindatum_geldigheid DATE, 
                 einddatum_geldigheid DATE);              
@@ -352,9 +387,10 @@ class DatabaseDuckdb:
                 rd_y DOUBLE, 
                 latitude DOUBLE, 
                 longitude DOUBLE, 
+                lon_lat GEOMETRY,
                 bouwjaar INTEGER,
                 hoofd_nummer_id TEXT, 
-                geometry TEXT);
+                geometry GEOMETRY);
 
             INSERT INTO adressen (
                 nummer_id, 
@@ -378,6 +414,7 @@ class DatabaseDuckdb:
                 rd_y, 
                 longitude, 
                 latitude, 
+                lon_lat,
                 bouwjaar, 
                 geometry)
             SELECT
@@ -402,6 +439,7 @@ class DatabaseDuckdb:
                 v.rd_y,
                 v.longitude,
                 v.latitude,
+                v.lon_lat,
                 p.bouwjaar,
                 p.geometry
             FROM nummers n
@@ -428,6 +466,9 @@ class DatabaseDuckdb:
 
         utils.print_log('create adressen tabel: update nevenadressen data')
         self.adressen_update_nevenadressen()
+
+        utils.print_log('create adressen tabel: fill lon_lat column from longitude/latitude')
+        self.connection.execute("UPDATE adressen SET lon_lat=st_point(longitude, latitude) WHERE longitude is not NULL and latitude is not NULL")
 
         # self.connection.commit()
 

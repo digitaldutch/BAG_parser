@@ -12,7 +12,12 @@ class Exporter:
     def __export(self, output_filename, export_options, sql):
 
         utils.print_log(f"start: export adressen naar bestand '{output_filename}'")
-
+        self.database.connection.execute("""
+            INSTALL Spatial;
+            LOAD Spatial;
+            INSTALL JSON;
+            LOAD JSON;
+        """)
         if not self.database.table_exists('adressen'):
             utils.print_log("DuckDB database bevat geen adressen tabel. Importeer BAG eerst.", True)
             quit()
@@ -21,7 +26,16 @@ class Exporter:
         self.database.connection.execute(sqlcmd)
 
     def export(self, output_filename, export_options, export_geometry=False):
-        exp_geom = "a.geometry AS geometry" if export_geometry else ""
+        exp_geom = ""
+        exp_lon_lat = ""
+        if output_filename.endswith('.parquet'):
+            exp_lon_lat = "a.lon_lat AS lon_lat,"
+            exp_geom = "a.geometry AS geometry" if export_geometry else ""
+        if output_filename.endswith('.json'):
+            exp_lon_lat = "st_asgeojson(a.lon_lat) AS lon_lat,"
+            exp_geom = "st_asgeojson(a.geometry) as geometry " if export_geometry else ""
+
+
         sql = f"""
                 SELECT
                   o.naam                       AS straat,
@@ -36,6 +50,7 @@ class Exporter:
                   a.rd_y,
                   a.latitude,
                   a.longitude,
+                  {exp_lon_lat}
                   a.oppervlakte                AS vloeroppervlakte,
                   a.gebruiksdoel,
                   a.hoofd_nummer_id,
@@ -48,13 +63,17 @@ class Exporter:
 
         self.__export(output_filename, export_options, sql)
 
-    def export_postcode(self, output_filename, export_options):
-        sql = """
+    def export_postcode(self, output_filename, export_options, is_parquet=False):
+        exp_parquet = "a.lon_lat AS lon_lat," if is_parquet else ""
+        sql = f"""
             SELECT
               o.naam                       AS straat,
               a.huisnummer,
               a.huisletter || a.toevoeging AS toevoeging,
               a.postcode,
+              a.latitude,
+              a.longitude,
+              {exp_parquet}
               w.naam                       AS woonplaats
             FROM adressen a
               LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id

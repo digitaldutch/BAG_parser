@@ -77,7 +77,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             # save_function = db_sqlite.save_pand
         case 'Verblijfsobject':
             coordinates_field = 'pos'
-            has_geometry = True
+            # has_geometry = True
             # save_function = db_sqlite.save_verblijfsobject
         case 'Ligplaats':
             coordinates_field = 'geometry'
@@ -149,7 +149,6 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
 def geometry_to_wgs84(rows, geometry_points=2):
     for i, row in enumerate(rows):
         row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'], geometry_points)
-
     return rows
 
 
@@ -457,6 +456,7 @@ class BagParser:
                                  self.db_tag_parent_fields)
             futures.append(future)
 
+        post_sql = None
         match self.tag_name:
             case 'Woonplaats':
                 save_function = self.database.save_woonplaats
@@ -470,10 +470,13 @@ class BagParser:
                 save_function = self.database.save_pand
             case 'Verblijfsobject':
                 save_function = self.database.save_verblijfsobject
+                post_sql = "UPDATE verblijfsobjecten SET lon_lat=st_point(longitude, latitude) WHERE longitude is not NULL and latitude is not NULL"
             case 'Ligplaats':
                 save_function = self.database.save_ligplaats
+                post_sql = "UPDATE ligplaatsen SET lon_lat=st_point(longitude, latitude) WHERE longitude is not NULL and latitude is not NULL"
             case 'Standplaats':
                 save_function = self.database.save_standplaats
+                post_sql = "UPDATE standplaatsen SET lon_lat=st_point(longitude, latitude) WHERE longitude is not NULL and latitude is not NULL"
             case _:
                 raise Exception(f'No save function found for tag_name "{self.tag_name}"')
 
@@ -491,6 +494,10 @@ class BagParser:
             self.count_xml_files += 1
             self.count_xml_tags += count_file_xml
             self.__update_xml_status()
+
+        if post_sql:
+            utils.print_log(f"Post processing {self.tag_name}")
+            self.database.post_process(post_sql)
 
         wait(futures)
 

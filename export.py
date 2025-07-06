@@ -41,7 +41,7 @@ elif args.json:
     export_options = "(ARRAY)"
 
 if args.all:
-    exporter.export(f'output/adressen_all_data.{ext}', export_options)
+    exporter.export(f'output/adressen_all_data.{ext}', export_options, False)
 elif args.geometry:
     exporter.export(f'output/adressen_all_data_geometry.{ext}', export_options, True)
 elif args.postcode4:
