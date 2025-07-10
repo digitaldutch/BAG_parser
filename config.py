@@ -34,7 +34,7 @@ delete_no_longer_needed_bag_tables = False
 # Public spaces with names longer than 24 characters also have a shortened name. Set to true to make short names the
 # default if available.
 # https://imbag.github.io/praktijkhandleiding/artikelen/hoe-wordt-de-verkorte-schrijfwijze-van-een-openbare-ruimte-bepaald
-use_short_street_names = True
+use_short_street_names = False
 
 # Enable if you want to parse geometry data for woonplaatsen, panden, ligplaatsen and standplaatsen.
 # The data is stored in polygon geojson format in the geometry field.
