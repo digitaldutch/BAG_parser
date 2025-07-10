@@ -1,3 +1,5 @@
 psutil
-pandas
 duckdb
+lxml
+polars
+pyarrow

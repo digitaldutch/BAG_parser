@@ -2,8 +2,8 @@ import duckdb
 
 import utils
 import config
-import pandas as pd
-import numpy as np
+# import pandas as pd
+# import numpy as np
 import polars as pl
 import pyarrow
 
@@ -94,15 +94,22 @@ class DatabaseDuckdb:
             f"UPDATE {table_name} SET longitude=?, latitude=? WHERE id=?;",
             records)
 
-    def save_gemeenten(self, gemeenten):
-        self.connection.executemany(
-            "INSERT INTO gemeenten (id, naam, provincie_id) VALUES(?, ?, ?);",
-            gemeenten)
+    def create_gemeenten_provincies(self, file_gemeenten):
+        try:
+            self.connection.execute(f"""
+                CREATE OR REPLACE TABLE gem_prov_read as select * from read_csv('{file_gemeenten}');
+            """)
+            self.connection.execute(f"""
+                CREATE OR REPLACE TABLE provincies as select Provinciecode::UBIGINT as id, first(Provincienaam) as naam FROM gem_prov_read group by all;
+            """)
+            self.connection.execute(f"""
+                CREATE OR REPLACE TABLE gemeenten as select Gemeentecode::UBIGINT as id, Gemeentenaam as naam, Provinciecode::UBIGINT as provincie_id FROM gem_prov_read group by all;
+            """)
+        except Exception as e:
+            utils.print_log(str(e), error=True)
+
 
     def save_gemeente_woonplaats(self, datarows):
-        # df = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # df = df.replace(r'^\s*$', np.nan, regex=True)
         df = pl.from_dicts(datarows, schema_overrides=self.schema_overrides, infer_schema_length=None)
         df.with_columns(
             pl.when(pl.col(pl.String).str.len_chars() == 0)
@@ -129,11 +136,6 @@ class DatabaseDuckdb:
             FROM (SELECT gemeente_id, woonplaats_id FROM gemeente_woonplaatsen) AS gw
             WHERE gw.woonplaats_id = woonplaatsen.woonplaats_id
             """)
-
-    def save_provincies(self, provincies):
-        self.connection.executemany(
-            "INSERT INTO provincies (id, naam) VALUES(?, ?)",
-            provincies)
 
     def save_openbare_ruimte(self, datarows):
         try:
@@ -164,11 +166,6 @@ class DatabaseDuckdb:
 
 
     def save_nummer(self, datarows):
-        # df1 = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # print(df)
-        # df1 = df1.replace(r'^\s*$', np.nan, regex=True)
-        # df = pl.from_pandas(df1)
         df = pl.from_dicts(datarows,schema_overrides=self.schema_overrides, infer_schema_length=None)
         df.with_columns(
             pl.when(pl.col(pl.String).str.len_chars() == 0)
@@ -192,9 +189,6 @@ class DatabaseDuckdb:
             # print(df.dtypes, flush=True)
 
     def save_pand(self, datarows):
-        # df = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # df = df.replace(r'^\s*$', np.nan, regex=True)
         try:
             df = pl.from_dicts(datarows,schema_overrides=self.schema_overrides, infer_schema_length=None)
             df.with_columns(
@@ -218,12 +212,6 @@ class DatabaseDuckdb:
 
 
     def save_verblijfsobject(self, datarows):
-        # df = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # df = df.replace(r'^\s*$', np.nan, regex=True)
-        # create geojson POINT for location as well
-        # df['lon_lat'] = df.apply(lambda row: f'{{"type":"Point", "coordinates":[{row.longitude},{row.latitude}]}}', axis=1)
-
         try:
             df = pl.from_dicts(datarows,schema_overrides=self.schema_overrides, infer_schema_length=None)
             df.with_columns(
@@ -253,9 +241,6 @@ class DatabaseDuckdb:
 
 
     def save_ligplaats(self, datarows):
-        # df = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # df = df.replace(r'^\s*$', np.nan, regex=True)
         try:
             df = pl.from_dicts(datarows,schema_overrides=self.schema_overrides, infer_schema_length=None)
             df.with_columns(
@@ -284,11 +269,6 @@ class DatabaseDuckdb:
 
 
     def save_standplaats(self, datarows):
-        # df = pd.DataFrame(datarows)
-        # pd.set_option("future.no_silent_downcasting", True)
-        # df = df.replace(r'^\s*$', np.nan, regex=True)
-        # create geojson POINT for location as well
-        # df['lon_lat'] = df.apply(lambda row: f'{{"type":"Point", "coordinates":[{row.longitude},{row.latitude}]}}', axis=1)
         try:
             df = pl.from_dicts(datarows,schema_overrides=self.schema_overrides, infer_schema_length=None)
             df.with_columns(

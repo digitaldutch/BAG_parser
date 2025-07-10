@@ -10,11 +10,6 @@ import config
 import utils
 from bag import rijksdriehoek
 
-
-# def parse_xml_files(files_xml, data_init, object_tag_name, db_fields, db_tag_parent_fields):
-#     for file in files_xml:
-#         parse_xml_file(file, data_init, object_tag_name, db_fields, db_tag_parent_fields)
-
 def prettyprint(element, prepend=''):
     # xml = etree.tostring(element, pretty_print=True)
     # print(xml.decode(), end='')
@@ -29,24 +24,22 @@ def prettyprint(element, prepend=''):
             prettyprint(child, prepend + '\t')
 
 
-def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_nested_fields):
+def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields):
     today_string = utils.bag_date_today()
 
     def find_nested(bag_element, nested_list):
         # print(f"find_nested {bag_element}, {nested_list}")
-        if nested_list:
-            nested_list1 = nested_list.copy()
-            nested_field = nested_list1.pop(0)
-            field = bag_element.findall('.//{*}' + nested_field)
-            if field:
-                # print(f"\tfound: {field}")
-                if nested_list1:
-                    return find_nested(field[0], nested_list1)
-                else:
-                    # print(f"\tvalue: {field[0].text}")
-                    return field[0].text
+        nested_list1 = nested_list.copy()
+        nested_field = nested_list1.pop(0)
+        field = bag_element.findall('.//{*}' + nested_field)
+        if field:
+            # print(f"\tfound: {field}")
+            if nested_list1:
+                return find_nested(field[0], nested_list1)
+            else:
+                # print(f"\tvalue: {field[0].text}")
+                return field[0].text
 
-        # This return should not be reached
         return None
 
     def bag_begindatum_valid(data):
@@ -72,7 +65,6 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         status_ok = (not status_active) or (data['status'] == status_active)
         return status_ok and bag_begindatum_valid(data) and bag_einddatum_valid(data)
 
-    # db_sqlite = DatabaseDuckdb()
     data = data_init.copy()
     coordinates_field = None
     has_geometry = False
@@ -80,10 +72,9 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     # (Panden use 3, ligplaats & standplaats use 2)
     geometry_points = 2
     status_active = None
-    # Cache data in memory to perform saving to SQLite in a single loop. SQLite is not good at threading, so
-    # it needs to perform as quickly as possible
+    # Cache data in memory to perform saving to DuckDB in a single loop in the calling main process.
+    # DuckDB is not good at writing from multiple processes.
     db_data = []
-    parent_tags = []
     xml_count = 0
 
     match tag_name:
@@ -99,7 +90,6 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         case 'Pand':
             has_geometry = True
             geometry_points = 3
-            None
         case 'Verblijfsobject':
             coordinates_field = 'pos'
         case 'Ligplaats':
@@ -111,65 +101,14 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         case _:
             raise Exception(f'No save function found for tag_name "{tag_name}"')
 
-    # Parse XML to data
-    # for event, elem in ElementTree.iterparse(file_xml, events=("start", "end")):
-    #     if event == 'start':
-    #         parent_tags.append(elem.tag)
-    #     elif event == 'end':
-    #         parent_tags.pop()
-    #
-    #         # Note: elem.text is only guaranteed in 'end' event
-    #         if elem.tag == object_tag_name:
-    #             xml_count += 1
-    #             db_data.append(data)
-    #             data = data_init.copy()
-    #         else:
-    #             field_found = False
-    #
-    #             if db_tag_parent_fields and parent_tags:
-    #                 parent_elem_tag = parent_tags[-1] + elem.tag
-    #                 field_parent_elem = db_tag_parent_fields.get(parent_elem_tag)
-    #                 if field_parent_elem:
-    #                     if field_parent_elem in data and data[field_parent_elem]:
-    #                         data[field_parent_elem] += "," + elem.text
-    #                     else:
-    #                         data[field_parent_elem] = elem.text
-    #                     field_found = True
-    #
-    #             if not field_found:
-    #                 field = db_fields.get(elem.tag)
-    #                 if field:
-    #                     if field == 'geometry':
-    #                         elem.text = '[' + elem.text + ']'
-    #                     if field in data and data[field]:
-    #                         data[field] += "," + elem.text
-    #                     else:
-    #                         data[field] = elem.text
-
-
-    ### def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_tag_parent_fields):
-    ### today_string = utils.bag_date_today()
     root = etree.parse(file_xml).getroot()
     bag_objects = root.findall(".//{*}"+object_tag_name)
     xml_count += len(bag_objects)
 
     for bag_object in bag_objects:
-        # print(bag_object)
         data = data_init.copy()
-        for xml_field, db_field  in db_fields.items():
-            # print(xml_field, db_field)
-            field = bag_object.findall(".//{*}" + xml_field)
-            if field:
-                # if 'pos' == xml_field:
-                #     xml = etree.tostring(field[0], pretty_print=True)
-                #     print(f"{db_field} = {xml.decode()}")
-                data[db_field] = field[0].text
-            else:
-                data[db_field] = None
-
-        # print(data)
-        for db_field, nested_field in db_nested_fields.items():
-            data[db_field] = find_nested(bag_object, nested_field)
+        for db_field, xml_field in db_fields.items():
+            data[db_field] = find_nested(bag_object, xml_field)
 
         db_data.append(data)
 
@@ -184,12 +123,6 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             db_data = geometry_to_wgs84(db_data, geometry_points)
         else:
             db_data = geometry_to_empty(db_data)
-
-    # Save data to SQLite
-    # for db_row in db_data:
-    #     save_function(db_row)
-    #
-    # db_sqlite.commit()
 
     return {'count':xml_count, 'data':db_data}
 
@@ -244,10 +177,9 @@ class BagParser:
         self.file_bag_code = None
         self.start_time = None
         self.db_fields = {}
-        # sometimes the same object tag is used for multiple fields and the parent tag has to be taken into account
-        self.db_tag_parent_fields = {}
         self.today_string = utils.bag_date_today()
-        self.data_init = {'status': '', 'begindatum_geldigheid': '', 'einddatum_geldigheid': ''}
+        # self.data_init = {'status': '', 'begindatum_geldigheid': '', 'einddatum_geldigheid': ''}
+        self.data_init = {}
 
         if not os.path.exists(self.folder_temp_xml):
             os.makedirs(self.folder_temp_xml)
@@ -255,374 +187,129 @@ class BagParser:
     def parse(self, tag_name):
         self.tag_name = tag_name
         self.count_xml_tags = 0
-        self.db_nested_fields = {}
 
         if self.tag_name == 'Woonplaats':
-            ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            ns_gml = "{http://www.opengis.net/gml/3.2}"
-
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999WPL"
-            # self.data_init['geometry'] = ''
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_objecten + 'naam': 'naam',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            # }
-            # if config.parse_geometries:
-            #     self.db_fields[ns_gml + 'posList'] = 'geometry'
-            # self.db_tag_parent_fields = {}
-
             self.object_tag_name = tag_name
             self.file_bag_code = "9999WPL"
-            self.data_init['geometry'] = ''
+            self.data_init['geometry'] = None
             self.db_fields = {
-                'identificatie': 'id',
-                'naam': 'naam',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
+                'id': ['identificatie'],
+                'naam': ['naam'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
             }
             if config.parse_geometries:
-                self.db_fields['posList'] = 'geometry'
-            self.db_tag_parent_fields = {}
-        elif self.tag_name == 'GemeenteWoonplaatsRelatie':
-            # ns_gwr_product = "{www.kadaster.nl/schemas/lvbag/gem-wpl-rel/gwr-producten-lvc/v20200601}"
-            # ns_bagtypes = "{www.kadaster.nl/schemas/lvbag/gem-wpl-rel/bag-types/v20200601}"
-            #
-            # self.object_tag_name = ns_gwr_product + tag_name
-            # self.file_bag_code = "GEM-WPL-RELATIE"
-            #
-            # self.db_fields = {
-            #     ns_bagtypes + 'begindatumTijdvakGeldigheid': 'begindatum_geldigheid',
-            #     ns_bagtypes + 'einddatumTijdvakGeldigheid': 'einddatum_geldigheid',
-            #     ns_gwr_product + 'status': 'status',
-            # }
-            # # 'identificatie' is used for both woonplaats_id and gemeente_id.
-            # # Therefore, identification is done by combining the tag with the parent tag
-            # self.db_tag_parent_fields = {
-            #     ns_gwr_product + 'gerelateerdeWoonplaats' + ns_gwr_product + 'identificatie': 'woonplaats_id',
-            #     ns_gwr_product + 'gerelateerdeGemeente' + ns_gwr_product + 'identificatie': 'gemeente_id',
-            # }
-            ns_gwr_product = "{www.kadaster.nl/schemas/lvbag/gem-wpl-rel/gwr-producten-lvc/v20200601}"
-            ns_bagtypes = "{www.kadaster.nl/schemas/lvbag/gem-wpl-rel/bag-types/v20200601}"
+                self.db_fields['geometry'] = ['posList']
 
+        elif self.tag_name == 'GemeenteWoonplaatsRelatie':
             self.object_tag_name = tag_name
             self.file_bag_code = "GEM-WPL-RELATIE"
-            self.data_init['begindatum_geldigheid'] = None
-            self.data_init['einddatum_geldigheid'] = None
-
             self.db_fields = {
-                'begindatumTijdvakGeldigheid': 'begindatum_geldigheid',
-                'einddatumTijdvakGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-            }
-            # 'identificatie' is used for both woonplaats_id and gemeente_id.
-            # Therefore, identification is done by combining the tag with the parent tag
-            self.db_nested_fields = {
-                # 'gerelateerdeWoonplaats' + '{*}' + 'identificatie': 'woonplaats_id',
-                # 'gerelateerdeGemeente' + '{*}' + 'identificatie': 'gemeente_id',
+                'begindatum_geldigheid': ['begindatumTijdvakGeldigheid'],
+                'einddatum_geldigheid': ['einddatumTijdvakGeldigheid'],
+                'status': ['status'],
                 'woonplaats_id': ['gerelateerdeWoonplaats', 'identificatie'],
                 'gemeente_id': ['gerelateerdeGemeente', 'identificatie'],
             }
+
         elif self.tag_name == 'OpenbareRuimte':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_nen5825 = "{www.kadaster.nl/schemas/lvbag/imbag/nen5825/v20200601}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999OPR"
-            # self.data_init['verkorte_naam'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_objecten + 'naam': 'lange_naam',
-            #     ns_nen5825 + 'verkorteNaam': 'verkorte_naam',
-            #     ns_objecten + 'type': 'type',
-            #     ns_objecten + 'aanduidingRecordInactief': 'inactief',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            #     ns_objecten_ref + 'WoonplaatsRef': 'woonplaats_id',
-            # }
-            # self.db_tag_parent_fields = {}
             self.object_tag_name = tag_name
             self.file_bag_code = "9999OPR"
-            self.data_init['naam'] = None
-            # self.data_init['lange_naam'] = None
-            self.data_init['verkorte_naam'] = None
-            self.data_init['begindatum_geldigheid'] = None
-            self.data_init['einddatum_geldigheid'] = None
-
             self.db_fields = {
-                'identificatie': 'id',
-                'naam': 'naam',
-                # 'verkorteNaam': 'verkorte_naam',
-                'type': 'type',
-                'aanduidingRecordInactief': 'inactief',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-                'WoonplaatsRef': 'woonplaats_id',
-            }
-            self.db_nested_fields = {
+                'id': ['identificatie'],
+                'naam': ['naam'],
+                'type': ['type'],
+                'inactief': ['aanduidingRecordInactief'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'] ,
+                'status': ['status'],
+                'woonplaats_id': ['WoonplaatsRef'],
                 'verkorte_naam': ['verkorteNaam', 'VerkorteNaamOpenbareRuimte', 'verkorteNaam'],
             }
-        elif self.tag_name == 'Nummeraanduiding':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999NUM"
-            # # Initialization required as BAG leaves fields out of the data if it is empty
-            # self.data_init['huisletter'] = ''
-            # self.data_init['toevoeging'] = ''
-            # self.data_init['postcode'] = ''
-            # self.data_init['woonplaats_id'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_objecten + 'postcode': 'postcode',
-            #     ns_objecten + 'huisnummer': 'huisnummer',
-            #     ns_objecten + 'huisletter': 'huisletter',
-            #     ns_objecten + 'huisnummertoevoeging': 'toevoeging',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            #     ns_objecten_ref + 'OpenbareRuimteRef': 'openbare_ruimte_id',
-            #     ns_objecten_ref + 'WoonplaatsRef': 'woonplaats_id',
+            # self.db_nested_fields = {
             # }
-            # self.db_tag_parent_fields = {}
-            ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-
+        elif self.tag_name == 'Nummeraanduiding':
             self.object_tag_name = tag_name
             self.file_bag_code = "9999NUM"
-            # Initialization required as BAG leaves fields out of the data if it is empty
-            self.data_init['huisletter'] = ''
-            self.data_init['toevoeging'] = ''
-            self.data_init['postcode'] = ''
-            self.data_init['woonplaats_id'] = None
-            self.data_init['begindatum_geldigheid'] = None
-            self.data_init['einddatum_geldigheid'] = None
-
-
             self.db_fields = {
-                'identificatie': 'id',
-                'postcode': 'postcode',
-                'huisnummer': 'huisnummer',
-                'huisletter': 'huisletter',
-                'huisnummertoevoeging': 'toevoeging',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-                'OpenbareRuimteRef': 'openbare_ruimte_id',
-                'WoonplaatsRef': 'woonplaats_id',
+                'id': ['identificatie'],
+                'postcode': ['postcode'],
+                'huisnummer': ['huisnummer'],
+                'huisletter': ['huisletter'],
+                'toevoeging': ['huisnummertoevoeging'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
+                'openbare_ruimte_id': ['OpenbareRuimteRef'],
+                'woonplaats_id': ['WoonplaatsRef'],
             }
-            self.db_tag_parent_fields = {}
 
         elif self.tag_name == 'Pand':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_gml = "{http://www.opengis.net/gml/3.2}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999PND"
-            # self.data_init['geometry'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_objecten + 'oorspronkelijkBouwjaar': 'bouwjaar',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            # }
-            # if config.parse_geometries:
-            #     self.db_fields[ns_gml + 'posList'] = 'geometry'
-            # self.db_tag_parent_fields = {}
-            #
             self.object_tag_name = tag_name
             self.file_bag_code = "9999PND"
-            self.data_init['geometry'] = ''
-
+            self.data_init['geometry'] = None
             self.db_fields = {
-                'identificatie': 'id',
-                'oorspronkelijkBouwjaar': 'bouwjaar',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
+                'id': ['identificatie'],
+                'bouwjaar': ['oorspronkelijkBouwjaar'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
             }
             if config.parse_geometries:
-                self.db_fields['posList'] = 'geometry'
-            # self.db_tag_parent_fields = {}
+                self.db_fields['geometry'] = ['posList']
 
         elif self.tag_name == 'Verblijfsobject':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-            # ns_gml = "{http://www.opengis.net/gml/3.2}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999VBO"
-            # self.data_init['pos'] = ''
-            # self.data_init['rd_x'] = ''
-            # self.data_init['rd_y'] = ''
-            # self.data_init['latitude'] = ''
-            # self.data_init['longitude'] = ''
-            # self.data_init['nevenadressen'] = ''
-            # self.data_init['gebruiksdoel'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_objecten + 'oppervlakte': 'oppervlakte',
-            #     ns_objecten + 'gebruiksdoel': 'gebruiksdoel',
-            #     ns_gml + 'pos': 'pos',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            #     ns_objecten_ref + 'PandRef': 'pand_id',
-            # }
-            # # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # # Therefore, identification is done by combining the tag with the parent tag
-            # self.db_tag_parent_fields = {
-            #     ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
-            #     ns_objecten + 'heeftAlsNevenadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nevenadressen',
-            # }
             self.object_tag_name = tag_name
             self.file_bag_code = "9999VBO"
-            # self.data_init['pos'] = ''
-            # self.data_init['rd_x'] = ''
-            # self.data_init['rd_y'] = ''
-            # self.data_init['latitude'] = ''
-            # self.data_init['longitude'] = ''
-            # self.data_init['nevenadressen'] = ''
-            # self.data_init['gebruiksdoel'] = ''
-
             self.db_fields = {
-                'identificatie': 'id',
-                'oppervlakte': 'oppervlakte',
-                'gebruiksdoel': 'gebruiksdoel',
-                'pos': 'pos',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-                'PandRef': 'pand_id',
-            }
-            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # Therefore, identification is done by combining the tag with the parent tag
-            self.db_nested_fields = {
+                'id': ['identificatie'],
+                'oppervlakte': ['oppervlakte'],
+                'gebruiksdoel': ['gebruiksdoel'],
+                'pos': ['pos'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
+                'pand_id': ['PandRef'],
                 'nummer_id': ['heeftAlsHoofdadres', 'NummeraanduidingRef'],
                 'nevenadressen': ['heeftAlsNevenadres', 'NummeraanduidingRef'],
             }
 
         elif self.tag_name == 'Ligplaats':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-            # ns_gml = "{http://www.opengis.net/gml/3.2}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999LIG"
-            # self.data_init['pos'] = ''
-            # self.data_init['rd_x'] = ''
-            # self.data_init['rd_y'] = ''
-            # self.data_init['latitude'] = ''
-            # self.data_init['longitude'] = ''
-            # self.data_init['geometry'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_gml + 'posList': 'geometry',
-            #     ns_objecten + 'aanduidingRecordInactief': 'inactief',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            # }
-            #
-            # # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # # Therefore, identification is done by combining the tag with the parent tag
-            # self.db_tag_parent_fields = {
-            #     ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
-            # }
-
             self.object_tag_name = tag_name
             self.file_bag_code = "9999LIG"
-            self.data_init['pos'] = ''
-            self.data_init['rd_x'] = ''
-            self.data_init['rd_y'] = ''
-            self.data_init['latitude'] = ''
-            self.data_init['longitude'] = ''
-            self.data_init['geometry'] = ''
-
+            self.data_init['pos'] = None
+            self.data_init['rd_x'] = None
+            self.data_init['rd_y'] = None
+            self.data_init['latitude'] = None
+            self.data_init['longitude'] = None
             self.db_fields = {
-                'identificatie': 'id',
-                'posList': 'geometry',
-                'aanduidingRecordInactief': 'inactief',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-            }
-
-            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # Therefore, identification is done by combining the tag with the parent tag
-            self.db_nested_fields = {
+                'id': ['identificatie'],
+                'geometry': ['posList'],
+                'inactief': ['aanduidingRecordInactief'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
                 'nummer_id': ['heeftAlsHoofdadres', 'NummeraanduidingRef'],
             }
-        elif self.tag_name == 'Standplaats':
-            # ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
-            # ns_historie = "{www.kadaster.nl/schemas/lvbag/imbag/historie/v20200601}"
-            # ns_objecten_ref = "{www.kadaster.nl/schemas/lvbag/imbag/objecten-ref/v20200601}"
-            # ns_gml = "{http://www.opengis.net/gml/3.2}"
-            #
-            # self.object_tag_name = ns_objecten + tag_name
-            # self.file_bag_code = "9999STA"
-            # self.data_init['pos'] = ''
-            # self.data_init['rd_x'] = ''
-            # self.data_init['rd_y'] = ''
-            # self.data_init['latitude'] = ''
-            # self.data_init['longitude'] = ''
-            # self.data_init['geometry'] = ''
-            #
-            # self.db_fields = {
-            #     ns_objecten + 'identificatie': 'id',
-            #     ns_gml + 'posList': 'geometry',
-            #     ns_objecten + 'aanduidingRecordInactief': 'inactief',
-            #     ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
-            #     ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
-            #     ns_objecten + 'status': 'status',
-            # }
-            # # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # # Therefore, identification is done by combining the tag with the parent tag
-            # self.db_tag_parent_fields = {
-            #     ns_objecten + 'heeftAlsHoofdadres' + ns_objecten_ref + 'NummeraanduidingRef': 'nummer_id',
-            # }
 
+        elif self.tag_name == 'Standplaats':
             self.object_tag_name = tag_name
             self.file_bag_code = "9999STA"
-            self.data_init['pos'] = ''
-            self.data_init['rd_x'] = ''
-            self.data_init['rd_y'] = ''
-            self.data_init['latitude'] = ''
-            self.data_init['longitude'] = ''
-            self.data_init['geometry'] = ''
+            self.data_init['pos'] = None
+            self.data_init['rd_x'] = None
+            self.data_init['rd_y'] = None
+            self.data_init['latitude'] = None
+            self.data_init['longitude'] = None
+            # self.data_init['geometry'] = ''
 
             self.db_fields = {
-                'identificatie': 'id',
-                'posList': 'geometry',
-                'aanduidingRecordInactief': 'inactief',
-                'beginGeldigheid': 'begindatum_geldigheid',
-                'eindGeldigheid': 'einddatum_geldigheid',
-                'status': 'status',
-            }
-            # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
-            # Therefore, identification is done by combining the tag with the parent tag
-            self.db_nested_fields = {
+                'id': ['identificatie'],
+                'geometry': ['posList'],
+                'inactief': ['aanduidingRecordInactief'],
+                'begindatum_geldigheid': ['beginGeldigheid'],
+                'einddatum_geldigheid': ['eindGeldigheid'],
+                'status': ['status'],
                 'nummer_id': ['heeftAlsHoofdadres', 'NummeraanduidingRef'],
             }
         else:
@@ -661,11 +348,6 @@ class BagParser:
                 save_function = self.database.save_gemeente_woonplaats
             case 'OpenbareRuimte':
                 save_function = self.database.save_openbare_ruimte
-                # for data in datarows:
-                #     if config.use_short_street_names:
-                #         data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
-                #     else:
-                #         data["naam"] = data["lange_naam"]
                 if config.use_short_street_names:
                     post_sql = 'UPDATE openbare_ruimten SET naam=verkorte_naam WHERE verkorte_naam is not NULL';
             case 'Nummeraanduiding':
@@ -702,8 +384,7 @@ class BagParser:
         pool = ProcessPoolExecutor(workers_count)
         for file_xml in xml_files:
             future = pool.submit(parse_xml_file, file_xml, self.tag_name, self.data_init, self.object_tag_name,
-                                 self.db_fields,
-                                 self.db_nested_fields)
+                                 self.db_fields)
             futures.append(future)
 
         for future in futures:
