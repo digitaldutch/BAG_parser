@@ -22,8 +22,15 @@ class TextStyle(Enum):
     MAGENTA = '\033[35m'
     CYAN = '\033[36m'
     WHITE = '\033[37m'
+    ORANGE = '\033[38;5;208m'
     UNDERLINE = '\033[4m'
     RESET = '\033[0m'
+
+
+class PrintType(Enum):
+    INFO = 0
+    WARNING = 1
+    ERROR = 2
 
 
 logger = Logger()
@@ -60,19 +67,33 @@ def clear_log():
     logger.clear()
 
 
-def print_log(message, error=False):
+def print_log(message: str, print_type: PrintType = PrintType.INFO) -> None:
+    if print_type == PrintType.ERROR:
+        message = TextStyle.RED.value + 'ERROR: ' + message + TextStyle.RESET.value
+    elif print_type == PrintType.WARNING:
+        message = TextStyle.ORANGE.value + 'WARNING: ' + message + TextStyle.RESET.value
+
     now = datetime.now()
-
-    if error:
-        message = 'ERROR: ' + message
-
     text = now.strftime("%Y-%m-%d %H:%M:%S.%f") + ' ' + message
-    text_console = text
-    if error:
-        text_console = TextStyle.RED.value + text + TextStyle.RESET.value
 
-    print(text_console)
+    print(text)
     logger.log(text)
+
+def print_log_check(message: str, error: bool):
+    if error:
+        log_type = PrintType.ERROR
+    else:
+        log_type = PrintType.INFO
+
+    print_log(message, log_type)
+
+
+def print_log_warning(message):
+    print_log(message, PrintType.WARNING)
+
+
+def print_log_error(message):
+    print_log(message, PrintType.ERROR)
 
 
 def find_file(folder, search_text, extension):

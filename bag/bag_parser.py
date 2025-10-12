@@ -462,7 +462,7 @@ class BagParser:
 
     def add_gemeenten_into_woonplaatsen(self):
         if (not config.active_only):
-            utils.print_log('gemeente_id is only added to woonplaatsen if active_only=True in config', True)
+            utils.print_log_error('gemeente_id is only added to woonplaatsen if active_only=True in config')
             return
         self.database.add_gemeenten_to_woonplaatsen()
 

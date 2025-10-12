@@ -15,7 +15,13 @@ def main():
 
     utils.clear_log()
     utils.print_log(f"Python version {platform.python_version()}")
-    utils.print_log(f"BAG parser version {config.version} | {config.version_date} | {config.cpu_cores_used} CPU cores")
+
+    utils.print_log(f"Using {config.cpu_cores_used} CPU cores")
+    if not config.has_psutil:
+        utils.print_log_err(
+            'CPU cores manually set in config.py. Install the psutil package to auto detect the correct amount of CPU cores.')
+
+    utils.print_log(f"BAG parser version {config.version} | {config.version_date}")
     utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
 
     if not os.path.exists(config.file_bag):
@@ -59,7 +65,7 @@ def main():
 
     if config.create_adressen_table:
         if not config.active_only:
-            utils.print_log('addresses table is only created if active_only=True in config', True)
+            utils.print_log_error('addresses table is only created if active_only=True in config')
         else:
             db_sqlite.create_adressen_from_bag()
             db_sqlite.adressen_remove_dummy_values()

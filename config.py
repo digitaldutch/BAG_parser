@@ -1,8 +1,8 @@
+import importlib.util
 import locale
-import psutil
 
-version = 85
-version_date = '17 June 2025'
+version = 86
+version_date = '12 October 2025'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -49,8 +49,14 @@ delete_addresses_without_public_spaces_if_less_than = 100
 
 # The parser uses multiprocessing to speed up parsing the data. For best performance set to the number of
 # physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
-# The psutil module automatically determines the physical CPU core count. If you don't want to install the psutil
-# module, you can just set the number manually.
-cpu_cores_used = psutil.cpu_count(False)
-# cpu_cores_used = 8
+# The psutil module automatically determines the physical CPU core count. If it is not installed,
+# it defaults to the manual specified value (8).
+
+has_psutil = importlib.util.find_spec("psutil") is not None
+if has_psutil:
+    import psutil
+    cpu_cores_used = psutil.cpu_count(False)
+else:
+    cpu_cores_used = 8
+
 
