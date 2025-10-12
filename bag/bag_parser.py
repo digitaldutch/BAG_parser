@@ -11,11 +11,6 @@ from bag import rijksdriehoek
 from database_sqlite import DatabaseSqlite
 
 
-# def parse_xml_files(files_xml, data_init, object_tag_name, db_fields, db_tag_parent_fields):
-#     for file in files_xml:
-#         parse_xml_file(file, data_init, object_tag_name, db_fields, db_tag_parent_fields)
-
-
 def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_tag_parent_fields):
     today_string = utils.bag_date_today()
 
@@ -433,7 +428,7 @@ class BagParser:
 
         futures = []
         # Multi-threading and batch
-        # use ceil instead of round to prevent zero batch size
+        # use ceil instead of round to prevent zero batch_size
         batch_size = math.ceil(files_total / workers_count)
         # with ProcessPoolExecutor(1) as pool:
         #     for i in range(0, files_total, batch_size):

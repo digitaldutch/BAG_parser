@@ -163,13 +163,13 @@ class DatabaseSqlite:
         )
 
     def create_bag_tables(self):
-        self.connection.executescript("""
-            DROP TABLE IF EXISTS gemeenten;
-            CREATE TABLE gemeenten (id INTEGER PRIMARY KEY, naam TEXT, provincie_id INTEGER);
-            
+        self.connection.executescript("""           
             DROP TABLE IF EXISTS provincies;
             CREATE TABLE provincies (id INTEGER PRIMARY KEY, naam TEXT);
-            
+
+            DROP TABLE IF EXISTS gemeenten;
+            CREATE TABLE gemeenten (id INTEGER PRIMARY KEY, naam TEXT, provincie_id INTEGER);
+
             DROP TABLE IF EXISTS woonplaatsen;
             CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY AUTOINCREMENT, woonplaats_id INTEGER, naam TEXT, gemeente_id INTEGER, geometry TEXT,
                 status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
@@ -184,7 +184,7 @@ class DatabaseSqlite:
             );              
 
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id INTEGER PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
+            CREATE TABLE openbare_ruimten (id TEXT PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
                 type TEXT, woonplaats_id INTEGER, status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
 
             DROP TABLE IF EXISTS nummers;
@@ -193,7 +193,7 @@ class DatabaseSqlite:
                 huisnummer INTEGER, 
                 huisletter TEXT,
                 toevoeging TEXT, 
-                woonplaats_id TEXT, 
+                woonplaats_id INTEGER, 
                 openbare_ruimte_id TEXT,
                 status TEXT, 
                 begindatum_geldigheid TEXT, 
@@ -731,7 +731,7 @@ class DatabaseSqlite:
         count = self.fetchone("SELECT COUNT(*) FROM provincies;")
         is_error = count != 12
         if is_error: total_error_count += 1
-        utils.print_log(f"info: provincies: {count}", is_error)
+        utils.print_log_check(f"info: provincies: {count}", is_error)
 
         utils.print_log_check(f"test: total errors: {total_error_count}", total_error_count > 0)
 

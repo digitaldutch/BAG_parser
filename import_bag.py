@@ -18,7 +18,7 @@ def main():
 
     utils.print_log(f"Using {config.cpu_cores_used} CPU cores")
     if not config.has_psutil:
-        utils.print_log_err(
+        utils.print_log_error(
             'CPU cores manually set in config.py. Install the psutil package to auto detect the correct amount of CPU cores.')
 
     utils.print_log(f"BAG parser version {config.version} | {config.version_date}")

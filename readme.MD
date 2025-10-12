@@ -34,7 +34,7 @@ table. The SQLite database can be used directly as a source to generate a *.csv 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.13. Older Python versions may work but are not tested and certainly slower.
+* Python 3.14. Older Python versions may work but are not tested and certainly slower.
 
 ## Usage
 * Download or use git (recommended as updates are easier) to download the BAG parser.   
