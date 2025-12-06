@@ -16,7 +16,7 @@ def main():
     utils.clear_log()
     utils.print_log(f"Python version {platform.python_version()}")
 
-    utils.print_log(f"Using {config.cpu_cores_used} CPU cores")
+    utils.print_log(f"using {config.cpu_cores_used} CPU cores")
     if not config.has_psutil:
         utils.print_log_error(
             'CPU cores manually set in config.py. Install the psutil package to auto detect the correct amount of CPU cores.')
@@ -29,7 +29,7 @@ def main():
 
     temp_folder_name = 'temp'
 
-    # unzip BAG file to temp folder
+    # unzip the BAG file to the temp folder
     utils.print_log('unzip BAG file to temp folder')
     if not os.path.exists(temp_folder_name):
         os.makedirs(temp_folder_name)
@@ -82,9 +82,9 @@ def main():
 
     db_sqlite.close()
 
-    db_size_mb = os.path.getsize(config.file_db_sqlite) / (1024 * 1024)
-
     utils.print_log(f"ready: BAG XML to SQLite database '{config.file_db_sqlite}'")
+
+    db_size_mb = os.path.getsize(config.file_db_sqlite) / (1024 * 1024)
     utils.print_log(f"final SQLite file size: {db_size_mb:.1f} MB")
 
     utils.print_log(f"total run time: {utils.time_elapsed(start_time)}")

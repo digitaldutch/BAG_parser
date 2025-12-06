@@ -14,7 +14,7 @@ class DatabaseSqlite:
 
         # Speed up database
         # No journaling, synchronous mode off, locking mode exclusive, RAM disk for temporary tables, cache size 200MB
-        # This does not do an awful lot as saving is only 10% of the processing time
+        # This does not do an awful lot as saving is only 10% of the processing time. Parsing XML is 90%
         self.connection.execute("PRAGMA journal_mode=OFF;")
         self.connection.execute("PRAGMA synchronous=OFF;")
         self.connection.execute("PRAGMA locking_mode=EXCLUSIVE;")

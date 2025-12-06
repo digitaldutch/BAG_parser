@@ -1,5 +1,4 @@
 # BAG XML parser
-import math
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -8,7 +7,6 @@ import config
 
 import utils
 from bag import rijksdriehoek
-from database_sqlite import DatabaseSqlite
 
 
 def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_tag_parent_fields):
@@ -385,7 +383,6 @@ class BagParser:
 
         self.__unzip_xml()
 
-        utils.print_log('convert XML files to SQLite')
         self.__parse_xml_files()
 
         time_elapsed = utils.time_elapsed(self.start_time)
@@ -409,6 +406,8 @@ class BagParser:
         self.xml_files_completed = 0
         self.xml_tags_completed = 0
         self.start_time = time.perf_counter()
+
+        utils.print_log(f'number of XML files: {self.total_xml_files}')
 
         # Choose the correct save function ONCE, in the main process
         if self.tag_name == 'Woonplaats':
@@ -466,7 +465,7 @@ class BagParser:
         self.__update_xml_status(True)
 
     def add_gemeenten_into_woonplaatsen(self):
-        if (not config.active_only):
+        if not config.active_only:
             utils.print_log_error('gemeente_id is only added to woonplaatsen if active_only=True in config')
             return
         self.database.add_gemeenten_to_woonplaatsen()
