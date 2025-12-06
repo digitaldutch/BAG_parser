@@ -2,7 +2,7 @@
 import math
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor, wait
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from xml.etree import ElementTree
 import config
 
@@ -30,21 +30,18 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             # string date compare is quicker than converting to date types
             return datum >= today_string
         else:
-            return True
-            # No einddatum means valid
+            return True  # No einddatum means valid
 
-    def data_active(data):
-        status_ok = (not status_active) or (data['status'] == status_active)
-        return status_ok and bag_begindatum_valid(data) and bag_einddatum_valid(data)
+    def row_active(row):
+        status_ok = (not status_active) or (row['status'] == status_active)
+        return status_ok and bag_begindatum_valid(row) and bag_einddatum_valid(row)
 
-    db_sqlite = DatabaseSqlite()
     data = data_init.copy()
     coordinates_field = None
     has_geometry = False
     status_active = None
-    # Cache data in memory to perform saving to SQLite in a single loop. SQLite is not good at threading, so
-    # it needs to perform as quickly as possible
-    db_data = []
+
+    db_rows = []
     parent_tags = []
     xml_count = 0
 
@@ -52,29 +49,23 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         case 'Woonplaats':
             status_active = 'Woonplaats aangewezen'
             has_geometry = True
-            save_function = db_sqlite.save_woonplaats
         case 'GemeenteWoonplaatsRelatie':
-            save_function = db_sqlite.save_gemeente_woonplaats
+            pass
         case 'OpenbareRuimte':
             status_active = 'Naamgeving uitgegeven'
-            save_function = db_sqlite.save_openbare_ruimte
         case 'Nummeraanduiding':
             status_active = 'Naamgeving uitgegeven'
-            save_function = db_sqlite.save_nummer
         case 'Pand':
-            save_function = db_sqlite.save_pand
+            pass
         case 'Verblijfsobject':
             coordinates_field = 'pos'
             has_geometry = True
-            save_function = db_sqlite.save_verblijfsobject
         case 'Ligplaats':
             coordinates_field = 'geometry'
             has_geometry = True
-            save_function = db_sqlite.save_ligplaats
         case 'Standplaats':
             coordinates_field = 'geometry'
             has_geometry = True
-            save_function = db_sqlite.save_standplaats
         case _:
             raise Exception(f'No save function found for tag_name "{tag_name}"')
 
@@ -88,7 +79,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             # Note: elem.text is only guaranteed in 'end' event
             if elem.tag == object_tag_name:
                 xml_count += 1
-                db_data.append(data)
+                db_rows.append(data)
                 data = data_init.copy()
             else:
                 field_found = False
@@ -113,25 +104,22 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                         else:
                             data[field] = elem.text
 
+    # Filter active records
     if config.active_only:
-        db_data = list(filter(lambda d: data_active(d), db_data))
+        db_rows = [row for row in db_rows if row_active(row)]
 
+    # Add coordinates
     if coordinates_field is not None:
-        db_data = add_coordinates(db_data, coordinates_field)
+        db_rows = add_coordinates(db_rows, coordinates_field)
 
+    # Add geometry
     if has_geometry:
         if config.parse_geometries:
-            db_data = geometry_to_wgs84(db_data)
+            db_rows = geometry_to_wgs84(db_rows)
         else:
-            db_data = geometry_to_empty(db_data)
+            db_rows = geometry_to_empty(db_rows)
 
-    # Save data to SQLite
-    for db_row in db_data:
-        save_function(db_row)
-
-    db_sqlite.commit()
-
-    return xml_count
+    return db_rows
 
 
 def geometry_to_wgs84(rows):
@@ -150,7 +138,7 @@ def geometry_to_empty(rows):
 
 def get_pos_from_geometry(data):
     # geometry data looks like this: [111.111 222.222 333.333 444.444]
-    # Return string with first two numbers: 111.111 222.222
+    # Return string with the first two numbers: 111.111 222.222
     first_space = data.find(' ')
     second_space = data.find(' ', first_space + 1)
 
@@ -177,8 +165,8 @@ class BagParser:
 
     def __init__(self, database):
         self.database = database
-        self.count_xml_tags = 0
-        self.count_xml_files = 0
+        self.xml_tags_completed = 0
+        self.xml_files_completed = 0
         self.total_xml_files = None
         self.tag_name = None
         self.object_tag_name = None
@@ -195,7 +183,7 @@ class BagParser:
 
     def parse(self, tag_name):
         self.tag_name = tag_name
-        self.count_xml_tags = 0
+        self.xml_tags_completed = 0
 
         if self.tag_name == 'Woonplaats':
             ns_objecten = "{www.kadaster.nl/schemas/lvbag/imbag/objecten/v20200601}"
@@ -400,11 +388,9 @@ class BagParser:
         utils.print_log('convert XML files to SQLite')
         self.__parse_xml_files()
 
-        self.database.commit()
-
         time_elapsed = utils.time_elapsed(self.start_time)
         utils.print_log(f'ready: parse XML {self.tag_name} | {time_elapsed} '
-                        f'| XML nodes: {self.count_xml_tags:,d}')
+                        f'| XML nodes: {self.xml_tags_completed:,d}')
 
         utils.empty_folder(self.folder_temp_xml)
 
@@ -420,39 +406,63 @@ class BagParser:
         xml_files = utils.find_xml_files(self.folder_temp_xml, self.file_bag_code)
         files_total = len(xml_files)
         self.total_xml_files = files_total
-        self.count_xml_files = 0
-
+        self.xml_files_completed = 0
+        self.xml_tags_completed = 0
         self.start_time = time.perf_counter()
 
-        workers_count = config.cpu_cores_used
+        # Choose the correct save function ONCE, in the main process
+        if self.tag_name == 'Woonplaats':
+            save_function = self.database.save_woonplaats
+        elif self.tag_name == 'GemeenteWoonplaatsRelatie':
+            save_function = self.database.save_gemeente_woonplaats
+        elif self.tag_name == 'OpenbareRuimte':
+            save_function = self.database.save_openbare_ruimte
+        elif self.tag_name == 'Nummeraanduiding':
+            save_function = self.database.save_nummer
+        elif self.tag_name == 'Pand':
+            save_function = self.database.save_pand
+        elif self.tag_name == 'Verblijfsobject':
+            save_function = self.database.save_verblijfsobject
+        elif self.tag_name == 'Ligplaats':
+            save_function = self.database.save_ligplaats
+        elif self.tag_name == 'Standplaats':
+            save_function = self.database.save_standplaats
+        else:
+            raise Exception(f'No save function found for tag_name "{self.tag_name}"')
 
+        # Run XML parsing in parallel, but no DB writes in workers: we use a single writer process/connection
         futures = []
-        # Multi-threading and batch
-        # use ceil instead of round to prevent zero batch_size
-        batch_size = math.ceil(files_total / workers_count)
-        # with ProcessPoolExecutor(1) as pool:
-        #     for i in range(0, files_total, batch_size):
-        #         filenames = xml_files[i:(i + batch_size)]
-        #         future = pool.submit(parse_xml_files, filenames, self.data_init, self.object_tag_name, self.db_fields,
-        #                              self.db_tag_parent_fields)
-        #         futures.append(future)
+        workers_count = config.cpu_cores_used
+        with ProcessPoolExecutor(workers_count) as pool:
+            for file_xml in xml_files:
+                future = pool.submit(
+                    parse_xml_file,
+                    file_xml,
+                    self.tag_name,
+                    self.data_init,
+                    self.object_tag_name,
+                    self.db_fields,
+                    self.db_tag_parent_fields,
+                )
+                futures.append(future)
 
-        # Multi-threading. One XML file per executor.
-        pool = ProcessPoolExecutor(workers_count)
-        for file_xml in xml_files:
-            future = pool.submit(parse_xml_file, file_xml, self.tag_name, self.data_init, self.object_tag_name,
-                                 self.db_fields,
-                                 self.db_tag_parent_fields)
-            futures.append(future)
+            # Single big transaction for all rows
+            self.database.start_transaction()
 
-        for future in futures:
-            count_file_xml = future.result()
-            self.count_xml_files += 1
-            self.count_xml_tags += count_file_xml
-            self.__update_xml_status()
+            for future in as_completed(futures):
+                db_rows = future.result()
 
-        wait(futures)
+                self.xml_files_completed += 1
+                self.xml_tags_completed += len(db_rows)
 
+                for row in db_rows:
+                    save_function(row)
+
+                self.__update_xml_status()
+
+            self.database.commit_transaction()
+
+        # Final status update
         self.__update_xml_status(True)
 
     def add_gemeenten_into_woonplaatsen(self):
@@ -468,8 +478,8 @@ class BagParser:
 
             self.gui_time = time.perf_counter()
             self.elapsed_time = self.gui_time - self.start_time
-            tags_per_second = round(self.count_xml_tags / self.elapsed_time)
+            tags_per_second = round(self.xml_tags_completed / self.elapsed_time)
             time_elapsed_text = utils.time_elapsed(self.start_time)
 
-            bar_text = f" {time_elapsed_text} | XML nodes: {self.count_xml_tags:,d} | per second: {tags_per_second:,d}"
-            utils.print_progress_bar(self.count_xml_files, self.total_xml_files, bar_text, final)
+            bar_text = f" {time_elapsed_text} | XML nodes: {self.xml_tags_completed:,d} | per second: {tags_per_second:,d}"
+            utils.print_progress_bar(self.xml_files_completed, self.total_xml_files, bar_text, final)

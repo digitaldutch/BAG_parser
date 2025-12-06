@@ -9,9 +9,17 @@ class DatabaseSqlite:
     cursor = None
 
     def __init__(self):
-        check_same_thread = sqlite3.threadsafety != 3
-        self.connection = sqlite3.connect(config.file_db_sqlite, check_same_thread=check_same_thread)
+        self.connection = sqlite3.connect(config.file_db_sqlite)
         self.cursor = self.connection.cursor()
+
+        # Speed up database
+        # No journaling, synchronous mode off, locking mode exclusive, RAM disk for temporary tables, cache size 200MB
+        # This does not do an awful lot as saving is only 10% of the processing time
+        self.connection.execute("PRAGMA journal_mode=OFF;")
+        self.connection.execute("PRAGMA synchronous=OFF;")
+        self.connection.execute("PRAGMA locking_mode=EXCLUSIVE;")
+        self.connection.execute("PRAGMA temp_store=MEMORY;")
+        self.connection.execute("PRAGMA cache_size=-200000;") # 200MB. Negative value means cache size in kilobytes
 
     def close(self):
         self.connection.commit()

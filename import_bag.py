@@ -82,7 +82,10 @@ def main():
 
     db_sqlite.close()
 
-    utils.print_log(f"ready: BAG XML to sqlite database '{config.file_db_sqlite}'")
+    db_size_mb = os.path.getsize(config.file_db_sqlite) / (1024 * 1024)
+
+    utils.print_log(f"ready: BAG XML to SQLite database '{config.file_db_sqlite}'")
+    utils.print_log(f"final SQLite file size: {db_size_mb:.1f} MB")
 
     utils.print_log(f"total run time: {utils.time_elapsed(start_time)}")
 
