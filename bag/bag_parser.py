@@ -54,7 +54,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         case 'Nummeraanduiding':
             status_active = 'Naamgeving uitgegeven'
         case 'Pand':
-            pass
+            has_geometry = True
         case 'Verblijfsobject':
             coordinates_field = 'pos'
             has_geometry = True
@@ -74,7 +74,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         elif event == 'end':
             parent_tags.pop()
 
-            # Note: elem.text is only guaranteed in 'end' event
+            # Note: elem.text is only guaranteed in "end" event
             if elem.tag == object_tag_name:
                 xml_count += 1
                 db_rows.append(data)
@@ -86,21 +86,19 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                     parent_elem_tag = parent_tags[-1] + elem.tag
                     field_parent_elem = db_tag_parent_fields.get(parent_elem_tag)
                     if field_parent_elem:
-                        if field_parent_elem in data and data[field_parent_elem]:
-                            data[field_parent_elem] += "," + elem.text
-                        else:
-                            data[field_parent_elem] = elem.text
+                        text = elem.text or ''
+                        existing_parent_field = data.get(field_parent_elem)
+                        data[field_parent_elem] = f"{existing_parent_field},{text}" if existing_parent_field else text
                         field_found = True
 
                 if not field_found:
                     field = db_fields.get(elem.tag)
                     if field:
+                        text = elem.text or ''
                         if field == 'geometry':
-                            elem.text = '[' + elem.text + ']'
-                        if field in data and data[field]:
-                            data[field] += "," + elem.text
-                        else:
-                            data[field] = elem.text
+                            text = f'[{text}]'
+                        existing_field = data.get(field)
+                        data[field] = f"{existing_field},{text}" if existing_field else text
 
     # Filter active records
     if config.active_only:
@@ -144,15 +142,22 @@ def get_pos_from_geometry(data):
 
 
 def add_coordinates(rows, field_name):
-    for i, row in enumerate(rows):
-        if row[field_name]:
-            if field_name == 'geometry':
-                pos = get_pos_from_geometry(row[field_name])
-            else:
-                pos = row[field_name]
+    for row in rows:
+        field_value = row.get(field_name)
 
-            [row["rd_x"], row["rd_y"]] = utils.bag_pos_to_rd_coordinates(pos)
-            [row["latitude"], row["longitude"]] = rijksdriehoek.rijksdriehoek_to_wgs84(row["rd_x"], row["rd_y"])
+        if field_value:
+            if field_name == 'geometry':
+                pos = get_pos_from_geometry(field_value)
+            else:
+                pos = field_value
+
+            rd_x, rd_y = utils.bag_pos_to_rd_coordinates(pos)
+            row["rd_x"] = rd_x
+            row["rd_y"] = rd_y
+            
+            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(rd_x, rd_y)
+            row["latitude"] = lat
+            row["longitude"] = lon
 
     return rows
 
@@ -171,7 +176,7 @@ class BagParser:
         self.file_bag_code = None
         self.start_time = None
         self.db_fields = {}
-        # sometimes the same object tag is used for multiple fields and the parent tag has to be taken into account
+        # sometimes the same object tag is used for multiple fields, and the parent tag has to be taken into account
         self.db_tag_parent_fields = {}
         self.today_string = utils.bag_date_today()
         self.data_init = {'status': '', 'begindatum_geldigheid': '', 'einddatum_geldigheid': ''}
@@ -429,7 +434,7 @@ class BagParser:
         else:
             raise Exception(f'No save function found for tag_name "{self.tag_name}"')
 
-        # Run XML parsing in parallel, but no DB writes in workers: we use a single writer process/connection
+        # Run XML parsing in parallel, but save to DB afterward in the main thread, as SQLite writing is not thread-safe
         futures = []
         workers_count = config.cpu_cores_used
         with ProcessPoolExecutor(workers_count) as pool:

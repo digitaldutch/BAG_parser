@@ -105,7 +105,7 @@ class DatabaseSqlite:
             data["naam"] = data["verkorte_naam"] if data["verkorte_naam"] != '' else data["lange_naam"]
         else:
             data["naam"] = data["lange_naam"]
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO openbare_ruimten (id, naam, lange_naam, verkorte_naam, type, woonplaats_id, status,
             begindatum_geldigheid, einddatum_geldigheid)
@@ -115,7 +115,7 @@ class DatabaseSqlite:
              data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"]))
 
     def save_nummer(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO nummers (id, postcode, huisnummer, huisletter, toevoeging, woonplaats_id, 
               openbare_ruimte_id, status, begindatum_geldigheid, einddatum_geldigheid) 
@@ -126,8 +126,9 @@ class DatabaseSqlite:
              data["einddatum_geldigheid"])
         )
 
+
     def save_pand(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO panden (id, bouwjaar, geometry, status, begindatum_geldigheid, einddatum_geldigheid)
                VALUES(?, ?, ?, ?, ?, ?)
@@ -137,7 +138,7 @@ class DatabaseSqlite:
         )
 
     def save_verblijfsobject(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, rd_x, rd_y, latitude, longitude, 
             gebruiksdoel, nevenadressen, status, begindatum_geldigheid, einddatum_geldigheid) 
@@ -149,7 +150,7 @@ class DatabaseSqlite:
         )
 
     def save_ligplaats(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO ligplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, geometry, status,
                 begindatum_geldigheid, einddatum_geldigheid)
@@ -160,7 +161,7 @@ class DatabaseSqlite:
         )
 
     def save_standplaats(self, data):
-        # Note: Use replace, because BAG does not always contain unique id's
+        # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
             """REPLACE INTO standplaatsen (id, nummer_id, rd_x, rd_y, latitude, longitude, geometry, status,
                 begindatum_geldigheid, einddatum_geldigheid)
