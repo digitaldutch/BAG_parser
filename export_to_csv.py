@@ -1,5 +1,7 @@
+import platform
 from argparse import ArgumentParser
 
+import utils
 from exporter import Exporter
 
 parser = ArgumentParser(description='Export addresses in SQLite database to a *.csv file')
@@ -18,6 +20,8 @@ helpText = "Export statistics of 6 character postal code groups (e.g. 1000AA)"
 parser.add_argument('-p6', '--postcode6', action='store_true', help=helpText)
 
 args = parser.parse_args()
+
+utils.print_log(f"Python version {platform.python_version()}")
 
 csv_exporter = Exporter()
 

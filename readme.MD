@@ -71,7 +71,7 @@ SELECT
 FROM adressen a
   LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
   LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
-  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id
+  LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
   LEFT JOIN provincies p       ON g.provincie_id       = p.id
 WHERE postcode = '2514GL'
   AND huisnummer = 68;

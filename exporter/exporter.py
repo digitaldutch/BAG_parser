@@ -69,7 +69,7 @@ class Exporter:
             FROM adressen a
               LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
               LEFT JOIN gemeenten g        ON a.gemeente_id        = g.id
-              LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id
+              LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
               LEFT JOIN provincies p       ON g.provincie_id       = p.id;"""
 
         self.__export_to_csv(output_filename, headers, sql)
@@ -86,7 +86,7 @@ class Exporter:
               w.naam                       AS woonplaats
             FROM adressen a
               LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
-              LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.woonplaats_id;"""
+              LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id;"""
 
         self.__export_to_csv(output_filename, headers, sql)
 
@@ -101,7 +101,7 @@ class Exporter:
             COUNT(1)                 AS aantal_adressen,
             w.naam                   AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.woonplaats_id
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
           WHERE a.postcode <> ''
           GROUP BY pc4;"""
 
@@ -118,7 +118,7 @@ class Exporter:
             COUNT(1)                 AS aantal_adressen,
             w.naam                   AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.woonplaats_id
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
           WHERE a.postcode <> ''
           GROUP BY pc5;"""
 
@@ -135,7 +135,7 @@ class Exporter:
             COUNT(1)         AS aantal_adressen,
             w.naam           AS woonplaats
           FROM adressen a
-            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.woonplaats_id
+            LEFT JOIN woonplaatsen w ON a.woonplaats_id = w.id
           WHERE a.postcode <> ''
           GROUP BY pc6;"""
 

@@ -53,7 +53,7 @@ class DatabaseSqlite:
 
     def save_woonplaats(self, data):
         self.connection.execute(
-            """INSERT INTO woonplaatsen (woonplaats_id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) 
+            """INSERT INTO woonplaatsen (id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) 
             VALUES(?, ?, ?, ?, ?, ?)""",
             (data["id"], data["naam"], data["geometry"], data["status"], data["begindatum_geldigheid"],
              data["einddatum_geldigheid"]))
@@ -88,9 +88,9 @@ class DatabaseSqlite:
 
     def add_gemeenten_to_woonplaatsen(self):
         self.connection.execute(
-            """UPDATE woonplaatsen SET gemeente_id=gw.gemeente_id
+            """UPDATE woonplaatsen SET gemeente_id = gw.gemeente_id
             FROM (SELECT gemeente_id, woonplaats_id FROM gemeente_woonplaatsen) AS gw
-            WHERE gw.woonplaats_id = woonplaatsen.woonplaats_id
+            WHERE gw.woonplaats_id = woonplaatsen.id
             """)
         self.commit()
 
@@ -174,14 +174,25 @@ class DatabaseSqlite:
     def create_bag_tables(self):
         self.connection.executescript("""           
             DROP TABLE IF EXISTS provincies;
-            CREATE TABLE provincies (id INTEGER PRIMARY KEY, naam TEXT);
+            CREATE TABLE provincies (
+                id INTEGER PRIMARY KEY, 
+                naam TEXT);
 
             DROP TABLE IF EXISTS gemeenten;
-            CREATE TABLE gemeenten (id INTEGER PRIMARY KEY, naam TEXT, provincie_id INTEGER);
+            CREATE TABLE gemeenten (
+                id INTEGER PRIMARY KEY, 
+                naam TEXT, 
+                provincie_id INTEGER);
 
             DROP TABLE IF EXISTS woonplaatsen;
-            CREATE TABLE woonplaatsen (id INTEGER PRIMARY KEY AUTOINCREMENT, woonplaats_id INTEGER, naam TEXT, gemeente_id INTEGER, geometry TEXT,
-                status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
+            CREATE TABLE woonplaatsen (
+                id INTEGER PRIMARY KEY, 
+                naam TEXT, 
+                gemeente_id INTEGER, 
+                geometry TEXT,
+                status TEXT, 
+                begindatum_geldigheid TEXT, 
+                einddatum_geldigheid TEXT);
             
             DROP TABLE IF EXISTS gemeente_woonplaatsen;
             CREATE TABLE gemeente_woonplaatsen (
@@ -193,11 +204,20 @@ class DatabaseSqlite:
             );              
 
             DROP TABLE IF EXISTS openbare_ruimten;
-            CREATE TABLE openbare_ruimten (id TEXT PRIMARY KEY, naam TEXT, lange_naam TEXT, verkorte_naam TEXT, 
-                type TEXT, woonplaats_id INTEGER, status TEXT, begindatum_geldigheid TEXT, einddatum_geldigheid TEXT);
+            CREATE TABLE openbare_ruimten (
+                id TEXT PRIMARY KEY, 
+                naam TEXT, 
+                lange_naam TEXT, 
+                verkorte_naam TEXT, 
+                type TEXT, 
+                woonplaats_id INTEGER, 
+                status TEXT, 
+                begindatum_geldigheid TEXT, 
+                einddatum_geldigheid TEXT);
 
             DROP TABLE IF EXISTS nummers;
-            CREATE TABLE nummers (id TEXT PRIMARY KEY, 
+            CREATE TABLE nummers (
+                id TEXT PRIMARY KEY, 
                 postcode TEXT, 
                 huisnummer INTEGER, 
                 huisletter TEXT,
@@ -209,7 +229,8 @@ class DatabaseSqlite:
                 einddatum_geldigheid TEXT);
 
             DROP TABLE IF EXISTS panden;
-            CREATE TABLE panden (id TEXT PRIMARY KEY, 
+            CREATE TABLE panden (
+                id TEXT PRIMARY KEY, 
                 bouwjaar INTEGER, 
                 geometry TEXT,
                 status TEXT, 
@@ -271,9 +292,9 @@ class DatabaseSqlite:
         self.connection.commit()
 
     def create_indices_adressen(self):
-        # Speed up woonplaatsen queries
+        # Speed-up woonplaatsen queries
         self.connection.executescript("""
-            CREATE INDEX IF NOT EXISTS idx_adressen_woonplaats_id ON adressen (woonplaats_id)
+            CREATE INDEX IF NOT EXISTS idx_adressen_woonplaats_id ON adressen (woonplaats_id);
         """)
         self.connection.commit()
 
@@ -293,7 +314,7 @@ class DatabaseSqlite:
                 verblijfsobject_id TEXT, 
                 gemeente_id INTEGER, 
                 woonplaats_id INTEGER, 
-                openbare_ruimte_id INTEGER, 
+                openbare_ruimte_id TEXT, 
                 object_type TEXT, 
                 gebruiksdoel TEXT, 
                 postcode TEXT, 
@@ -359,7 +380,7 @@ class DatabaseSqlite:
                 p.geometry
             FROM nummers n
             LEFT JOIN openbare_ruimten o  ON o.id            = n.openbare_ruimte_id
-            LEFT JOIN woonplaatsen w      ON w.woonplaats_id = o.woonplaats_id
+            LEFT JOIN woonplaatsen w      ON w.id            = o.woonplaats_id
             LEFT JOIN verblijfsobjecten v ON v.nummer_id     = n.id
             LEFT JOIN panden p            ON v.pand_id       = p.id;
         """)
