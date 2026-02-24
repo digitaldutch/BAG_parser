@@ -190,6 +190,29 @@ def bag_geometry_to_wgs_geojson(geometry):
     return coordinates_wgs
 
 
+def bag_geometry_3d_rings_to_wgs_geojson(geometry):
+    """Convert a 3D multi-ring geometry string to GeoJSON polygon coordinates.
+
+    The parser stores each posList as [x y z x y z ...] and concatenates
+    multiple rings with commas: [ring1],[ring2]. This function handles both
+    single and multi-ring pand geometries.
+    """
+    rings = geometry.split('],[')
+    result_rings = []
+    for ring in rings:
+        ring = ring.strip('[]')
+        tokens = ring.split()
+        ring_coords = ''
+        it = iter(tokens)
+        for x, y, z in zip(it, it, it):
+            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
+            if ring_coords:
+                ring_coords += ','
+            ring_coords += '[' + str(lon) + ',' + str(lat) + ']'
+        result_rings.append('[' + ring_coords + ']')
+    return '[' + ','.join(result_rings) + ']'
+
+
 def bag_geometry_3d_to_wgs_geojson(coordinates_rd):
     coordinates_rd = coordinates_rd.split()
     coordinates_wgs = ''

@@ -123,13 +123,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
 def geometry_to_wgs84(rows, is_3d=False):
     for i, row in enumerate(rows):
         if is_3d:
-            # bag_geometry_3d_to_wgs_geojson expects raw space-separated text,
-            # but parse_xml_file wraps the posList value in [...] on read.
-            # Strip the outer brackets before passing.
-            geom = row['geometry']
-            if geom.startswith('[') and geom.endswith(']'):
-                geom = geom[1:-1]
-            row['geometry'] = utils.bag_geometry_3d_to_wgs_geojson(geom)
+            row['geometry'] = utils.bag_geometry_3d_rings_to_wgs_geojson(row['geometry'])
         else:
             row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
 
