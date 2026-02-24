@@ -111,16 +111,27 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     # Add geometry
     if has_geometry:
         if config.parse_geometries:
-            db_rows = geometry_to_wgs84(db_rows)
+            # Panden use 3D coordinates (srsDimension="3") in the BAG XML;
+            # all other types (Woonplaats, Ligplaats, Standplaats) use 2D.
+            db_rows = geometry_to_wgs84(db_rows, is_3d=(tag_name == 'Pand'))
         else:
             db_rows = geometry_to_empty(db_rows)
 
     return db_rows
 
 
-def geometry_to_wgs84(rows):
+def geometry_to_wgs84(rows, is_3d=False):
     for i, row in enumerate(rows):
-        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
+        if is_3d:
+            # bag_geometry_3d_to_wgs_geojson expects raw space-separated text,
+            # but parse_xml_file wraps the posList value in [...] on read.
+            # Strip the outer brackets before passing.
+            geom = row['geometry']
+            if geom.startswith('[') and geom.endswith(']'):
+                geom = geom[1:-1]
+            row['geometry'] = utils.bag_geometry_3d_to_wgs_geojson(geom)
+        else:
+            row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
 
     return rows
 
