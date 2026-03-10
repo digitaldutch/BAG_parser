@@ -58,16 +58,6 @@ class DatabaseSqlite:
             (data["id"], data["naam"], data["geometry"], data["status"], data["begindatum_geldigheid"],
              data["einddatum_geldigheid"]))
 
-    def save_woonplaats_geometry(self, woonplaatsen):
-        self.connection.executemany(
-            "UPDATE woonplaatsen SET geometry=? WHERE id=?;",
-            woonplaatsen)
-
-    def save_pand_geometry(self, panden):
-        self.connection.executemany(
-            "UPDATE panden SET geometry=? WHERE id=?;",
-            panden)
-
     def save_lon_lat(self, table_name, records):
         self.connection.executemany(
             f"UPDATE {table_name} SET longitude=?, latitude=? WHERE id=?;",

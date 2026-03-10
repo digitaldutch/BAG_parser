@@ -37,6 +37,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     data = data_init.copy()
     coordinates_field = None
     has_geometry = False
+    has_3d_geometry = False
     status_active = None
 
     db_rows = []
@@ -55,6 +56,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             status_active = 'Naamgeving uitgegeven'
         case 'Pand':
             has_geometry = True
+            has_3d_geometry = True
         case 'Verblijfsobject':
             coordinates_field = 'pos'
             has_geometry = True
@@ -111,16 +113,16 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
     # Add geometry
     if has_geometry:
         if config.parse_geometries:
-            db_rows = geometry_to_wgs84(db_rows)
+            db_rows = geometry_to_wgs84(db_rows, has_3d_geometry)
         else:
             db_rows = geometry_to_empty(db_rows)
 
     return db_rows
 
 
-def geometry_to_wgs84(rows):
+def geometry_to_wgs84(rows, is_3d):
     for i, row in enumerate(rows):
-        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'])
+        row['geometry'] = utils.bag_geometry_to_wgs_geojson(row['geometry'], is_3d)
 
     return rows
 

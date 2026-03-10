@@ -11,7 +11,7 @@ No need to install any dependencies or a database server.
 Another oneliner script (see below) will convert this SQLite database to CSV in 15 seconds. 
 
 ## Download the parsed BAG
-If you don't want to run the script yourself, download the latest BAG in SQLite or CSV format from
+If you are too lazy to run the script yourself, you can also download the BAG in SQLite or CSV format from
 our [releases](https://github.com/digitaldutch/BAG_parser/releases) section.
 
 ## About the BAG

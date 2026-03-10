@@ -1,3 +1,4 @@
+import json
 import math
 import multiprocessing
 import time
@@ -168,46 +169,30 @@ def bag_date_today():
     return datetime.today().strftime("%Y-%m-%d")
 
 
-def bag_geometry_to_wgs_geojson(geometry):
+def bag_geometry_to_wgs_geojson(geometry, is_3d):
     geometries = geometry.split(",")
-    coordinates_wgs = ''
+    coordinates_wgs = []
     for linear_ring in geometries:
-        # Remove [] begin and end characters
-        linear_ring = linear_ring[1:-1]
-        linear_ring = linear_ring.split()
-        ring_coordinates_wgs = ''
+        # Remove [] and split int individual coordinates
+        linear_ring = linear_ring.strip("[]").split()
+        ring_coordinates_wgs = []
         it = iter(linear_ring)
-        for x, y in zip(it, it):
-            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
-            if ring_coordinates_wgs:
-                ring_coordinates_wgs += ','
-            ring_coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
 
-        if coordinates_wgs:
-            coordinates_wgs += ','
-        coordinates_wgs += '[' + ring_coordinates_wgs + ']'
+        # Use zip to process coordinates in pairs or triplets
+        coordinates_rd = zip(it, it, it) if is_3d else zip(it, it)
 
-    return coordinates_wgs
+        # Ignore z coordinate in 3D as we don't use it
+        for x, y, *z in coordinates_rd:
+            x_rd, y_rd = float(x), float(y)
+            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(x_rd, y_rd)
+            ring_coordinates_wgs.append([lon, lat])
 
+        coordinates_wgs.append(ring_coordinates_wgs)
 
-def bag_geometry_3d_to_wgs_geojson(coordinates_rd):
-    coordinates_rd = coordinates_rd.split()
-    coordinates_wgs = ''
-    it = iter(coordinates_rd)
-    for x, y, z in zip(it, it, it):
-        lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(float(x), float(y))
-        if coordinates_wgs != '':
-            coordinates_wgs += ','
-        coordinates_wgs += '[' + str(lon) + ',' + str(lat) + ']'
-
-    coordinates_wgs = '[[' + coordinates_wgs + ']]'
-    return coordinates_wgs
+    # Return in JSON string format
+    return json.dumps(coordinates_wgs)
 
 
 def bag_pos_to_rd_coordinates(pos):
     pos = pos.split()
     return float(pos[0]), float(pos[1])
-
-
-def escape_sql_text(text):
-    return text.replace("'", "''")

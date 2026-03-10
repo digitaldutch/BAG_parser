@@ -1,8 +1,8 @@
 import importlib.util
 import locale
 
-version = 92
-version_dat = '9 December 2025'
+version = 93
+version_date = '10 March 2026'
 
 locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -15,7 +15,7 @@ file_gemeenten = 'input/gemeenten.csv'
 # Output SQLite database with parsed BAG
 file_db_sqlite = 'output/bag.sqlite'
 
-# Log file containing progress, warnings and error messages. This info is also written to the console.
+# Log-file containing progress, warnings and error messages. This info is also written to the console.
 file_log = 'output/bag_importer.log'
 
 # The parser creates an 'adressen' table merging the data of nummers, panden, verblijfsobjecten, ligplaatsen and

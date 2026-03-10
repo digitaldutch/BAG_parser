@@ -1,6 +1,7 @@
 .idea
 /temp
 /temp_xml
+/test
 /venv/
 /input/bag.zip
 /output/
