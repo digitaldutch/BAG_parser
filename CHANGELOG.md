@@ -1,5 +1,8 @@
 # Changelog
 
+## V97 - 11 October 2026
+* Fixed: Parsing inactive records (`active_only = False`) crashed on duplicate woonplaats IDs (#27). The woonplaats version with the latest begindatum_geldigheid is now kept.
+
 ## V96 - 11 October 2026
 * Fall back to the system locale when `nl_NL` / `en_US` is not installed (config.py, statusbar/status.py)
 * `.gitignore` now ignores `/scratch` instead of `/test`

@@ -52,9 +52,18 @@ class DatabaseSqlite:
         self.connection.execute("VACUUM")
 
     def save_woonplaats(self, data):
+        # Note: Inactive records (active_only=False) can have several versions of the same woonplaats id.
+        # Keep the version with the latest begindatum_geldigheid.
         self.connection.execute(
             """INSERT INTO woonplaatsen (id, naam, geometry, status, begindatum_geldigheid, einddatum_geldigheid) 
-            VALUES(?, ?, ?, ?, ?, ?)""",
+            VALUES(?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              naam = excluded.naam,
+              geometry = excluded.geometry,
+              status = excluded.status,
+              begindatum_geldigheid = excluded.begindatum_geldigheid,
+              einddatum_geldigheid = excluded.einddatum_geldigheid
+            WHERE excluded.begindatum_geldigheid >= woonplaatsen.begindatum_geldigheid""",
             (data["id"], data["naam"], data["geometry"], data["status"], data["begindatum_geldigheid"],
              data["einddatum_geldigheid"]))
 
