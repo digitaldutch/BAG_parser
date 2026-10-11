@@ -10,6 +10,12 @@ helpText = ("Export all data including year of construction, latitude, longitude
             "buildings")
 parser.add_argument('-a', '--all', action='store_true', help=helpText)
 
+helpText = "Export all active openbare ruimten (streets etc.), including those without addresses"
+parser.add_argument('-o', '--openbare-ruimten', action='store_true', help=helpText)
+
+helpText = "Export all active woonplaatsen"
+parser.add_argument('-w', '--woonplaatsen', action='store_true', help=helpText)
+
 helpText = "Export statistics of 4 character postal code groups (e.g. 1000)"
 parser.add_argument('-p4', '--postcode4', action='store_true', help=helpText)
 
@@ -27,6 +33,10 @@ csv_exporter = Exporter()
 
 if args.all:
     csv_exporter.export_to_csv('output/adressen_all_data.csv')
+elif args.openbare_ruimten:
+    csv_exporter.export_to_csv_openbare_ruimten('output/openbare_ruimten.csv')
+elif args.woonplaatsen:
+    csv_exporter.export_to_csv_woonplaatsen('output/woonplaatsen.csv')
 elif args.postcode4:
     csv_exporter.export_to_csv_postcode4_stats('output/adressen_p4_stats.csv')
 elif args.postcode5:

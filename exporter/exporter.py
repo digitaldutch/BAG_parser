@@ -90,6 +90,41 @@ class Exporter:
 
         self.__export_to_csv(output_filename, headers, sql)
 
+    def export_to_csv_openbare_ruimten(self, output_filename):
+        headers = ['id', 'naam', 'lange_naam', 'verkorte_naam', 'type', 'woonplaats', 'gemeente', 'provincie']
+
+        sql = """
+            SELECT
+              o.id,
+              o.naam,
+              o.lange_naam,
+              o.verkorte_naam,
+              o.type,
+              w.naam AS woonplaats,
+              g.naam AS gemeente,
+              p.naam AS provincie
+            FROM openbare_ruimten o
+              LEFT JOIN woonplaatsen w ON o.woonplaats_id = w.id
+              LEFT JOIN gemeenten g    ON w.gemeente_id   = g.id
+              LEFT JOIN provincies p   ON g.provincie_id  = p.id;"""
+
+        self.__export_to_csv(output_filename, headers, sql, False)
+
+    def export_to_csv_woonplaatsen(self, output_filename):
+        headers = ['id', 'naam', 'gemeente', 'provincie']
+
+        sql = """
+            SELECT
+              w.id,
+              w.naam,
+              g.naam AS gemeente,
+              p.naam AS provincie
+            FROM woonplaatsen w
+              LEFT JOIN gemeenten g  ON w.gemeente_id  = g.id
+              LEFT JOIN provincies p ON g.provincie_id = p.id;"""
+
+        self.__export_to_csv(output_filename, headers, sql, False)
+
     def export_to_csv_postcode4_stats(self, output_filename):
         headers = ['postcode4', 'center_lat', 'center_lon', 'aantal_adressen', 'woonplaats']
 

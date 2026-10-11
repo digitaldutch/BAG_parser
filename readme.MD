@@ -97,6 +97,12 @@ Export all data including year of construction, latitude, longitude, floor area 
 -h, --help  
 show the help information message
 
+-o, --openbare-ruimten  
+Export all active openbare ruimten (streets etc.), including those without addresses. Includes woonplaats, gemeente and provincie. ~1s
+
+-w, --woonplaatsen  
+Export all active woonplaatsen with gemeente and provincie. ~1s
+
 -p4, --postcode4  
 Export statistics of 4 character postal code groups. (e.g. 1000). ~10s 
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## V98 - 11 October 2026
+* export_to_csv.py: new options `-o` / `--openbare-ruimten` to export all active openbare ruimten (also those without addresses) and `-w` / `--woonplaatsen` to export all active woonplaatsen (#28)
+
 ## V97 - 11 October 2026
 * Fixed: Parsing inactive records (`active_only = False`) crashed on duplicate woonplaats IDs (#27). The woonplaats version with the latest begindatum_geldigheid is now kept.
 
