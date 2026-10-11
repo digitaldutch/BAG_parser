@@ -3,7 +3,7 @@
 Guidance for AI coding agents working on this repository.
 
 ## Project
-Python 3.14 utility that parses the Dutch BAG (Basisregistratie Adressen en Gebouwen) XML extract from Kadaster into a
+Python (3.11 or newer) utility that parses the Dutch BAG (Basisregistratie Adressen en Gebouwen) XML extract from Kadaster into a
 SQLite database, and exports it to CSV. No third-party dependencies; keep it that way. See [README.md](README.md).
 
 ## Layout

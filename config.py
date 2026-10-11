@@ -1,7 +1,7 @@
 import importlib.util
 import locale
 
-version = 99
+version = 100
 version_date = '11 October 2026'
 
 # Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.

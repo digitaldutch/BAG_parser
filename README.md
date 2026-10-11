@@ -34,7 +34,8 @@ table. The SQLite database can be used directly as a source to generate a *.csv 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.14. Older Python versions may work but are not tested and certainly slower.
+* Python 3.11 or newer.
+* Optional: the `psutil` package (`pip install -r requirements.txt`). It is used to detect the number of physical CPU cores for the best performance. Without it the parser uses 8 cores.
 
 ## Usage
 * Download or use git (recommended as updates are easier) to download the BAG parser.   

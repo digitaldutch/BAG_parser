@@ -1,5 +1,9 @@
 # Changelog
 
+## V100 - 11 October 2026
+* Python 3.11 or newer is now the documented requirement (was 3.14)
+* Added requirements.txt. The only dependency, `psutil`, is optional.
+
 ## V99 - 11 October 2026
 * **Breaking:** Fields that can have multiple values now have plural names and are stored properly (#19, #17):
   * `adressen`: `pand_id` is now `pand_ids` and `gebruiksdoel` is now `gebruiksdoelen`. Still comma-separated. 
