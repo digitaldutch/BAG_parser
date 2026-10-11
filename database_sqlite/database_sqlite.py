@@ -150,6 +150,13 @@ class DatabaseSqlite:
 
         # Fields that can have multiple values are saved in separate tables
         verblijfsobject_id = data["id"]
+
+        # Inactive records (active_only=False) can have several versions of the same verblijfsobject id. REPLACE keeps
+        # the last version, so also remove the values of the earlier versions. Active records have unique id's.
+        if not config.active_only:
+            for table in ('verblijfsobject_panden', 'verblijfsobject_gebruiksdoelen', 'verblijfsobject_nevenadressen'):
+                self.connection.execute(f"DELETE FROM {table} WHERE verblijfsobject_id = ?;", (verblijfsobject_id,))
+
         self.connection.executemany(
             "INSERT INTO verblijfsobject_panden (verblijfsobject_id, pand_id) VALUES (?, ?);",
             [(verblijfsobject_id, pand_id) for pand_id in data["pand_ids"]])
@@ -303,6 +310,21 @@ class DatabaseSqlite:
                 begindatum_geldigheid TEXT, 
                 einddatum_geldigheid TEXT);              
         """)
+
+        if not config.active_only:
+            # Needed to quickly remove the values of earlier versions in save_verblijfsobject.
+            # The same indices are created (if not exists) in create_indices_bag for active_only.
+            self.connection.executescript("""
+                CREATE INDEX IF NOT EXISTS idx_verblijfsobject_panden_verblijfsobject_id
+                  ON verblijfsobject_panden (verblijfsobject_id);
+
+                CREATE INDEX IF NOT EXISTS idx_verblijfsobject_gebruiksdoelen_verblijfsobject_id
+                  ON verblijfsobject_gebruiksdoelen (verblijfsobject_id);
+
+                CREATE INDEX IF NOT EXISTS idx_verblijfsobject_nevenadressen_verblijfsobject_id
+                  ON verblijfsobject_nevenadressen (verblijfsobject_id);
+            """)
+
         self.connection.commit()
 
     def create_indices_bag(self):
@@ -706,12 +728,12 @@ class DatabaseSqlite:
         utils.print_log_check("test: panden zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                               "WHERE adressen.latitude IS NULL AND gebruiksdoelen='ligplaats';")
+                               "WHERE adressen.latitude IS NULL AND object_type='ligplaats';")
         total_error_count += count
         utils.print_log_check("test: ligplaatsen zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                              "WHERE adressen.latitude IS NULL AND gebruiksdoelen='standplaats';")
+                              "WHERE adressen.latitude IS NULL AND object_type='standplaats';")
         total_error_count += count
         utils.print_log_check("test: standplaatsen zonder locatie: " + str(count), count > 0)
 
@@ -745,7 +767,7 @@ class DatabaseSqlite:
         count = self.fetchone("SELECT COUNT(*) FROM openbare_ruimten;")
         is_error = count < 250000
         if is_error: total_error_count += 1
-        utils.print_log_check(f"info: openbare ruimten: {count:n}", count < is_error)
+        utils.print_log_check(f"info: openbare ruimten: {count:n}", is_error)
 
         count = self.fetchone("SELECT COUNT(*) FROM woonplaatsen;")
         is_error = count < 2000

@@ -1,5 +1,10 @@
 # Changelog
 
+## V101 - 11 October 2026
+* Fixed: The ligplaatsen and standplaatsen "zonder locatie" tests checked `gebruiksdoelen` and could never find anything. They now check `object_type`.
+* Fixed: The "info: openbare ruimten" test line never showed as an error.
+* Fixed: With `active_only = False` the `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables contained the values of all versions of a verblijfsobject. Now only the values of the version that is kept in `verblijfsobjecten` remain.
+
 ## V100 - 11 October 2026
 * Python 3.11 or newer is now the documented requirement (was 3.14)
 * Added requirements.txt. The only dependency, `psutil`, is optional.
