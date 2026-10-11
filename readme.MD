@@ -74,7 +74,7 @@ FROM adressen a
   LEFT JOIN woonplaatsen w     ON a.woonplaats_id      = w.id
   LEFT JOIN provincies p       ON g.provincie_id       = p.id
 WHERE postcode = '2514GL'
-  AND huisnummer = 68;
+  AND huisnummer = 78;
 ```
 * When done parsing, use [export_to_csv.py](export_to_csv.py) to create a *.csv file. This file has several command line options (see below). 
 These conversion functions are easy to customize. 
