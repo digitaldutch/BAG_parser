@@ -46,7 +46,7 @@ class Exporter:
 
     def export_to_csv(self, output_filename):
         headers = ['straat', 'huisnummer', 'toevoeging', 'postcode', 'gemeente', 'woonplaats', 'provincie',
-                   'bouwjaar', 'rd_x', 'rd_y', 'latitude', 'longitude', 'vloeroppervlakte', 'gebruiksdoel',
+                   'bouwjaar', 'rd_x', 'rd_y', 'latitude', 'longitude', 'vloeroppervlakte', 'gebruiksdoelen',
                    'hoofdadres_nummer_id']
 
         sql = """
@@ -64,7 +64,7 @@ class Exporter:
               a.latitude,
               a.longitude,
               a.oppervlakte                AS vloeroppervlakte,
-              a.gebruiksdoel,
+              a.gebruiksdoelen,
               a.hoofd_nummer_id
             FROM adressen a
               LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id

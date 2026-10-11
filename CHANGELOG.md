@@ -1,5 +1,15 @@
 # Changelog
 
+## V99 - 11 October 2026
+* **Breaking:** Fields that can have multiple values now have plural names and are stored properly (#19, #17):
+  * `adressen`: `pand_id` is now `pand_ids` and `gebruiksdoel` is now `gebruiksdoelen`. Still comma-separated. 
+    The `pand_ids` field now contains all panden of an address (before only one or none).
+  * `verblijfsobjecten`: the comma-separated `pand_id`, `gebruiksdoel` and `nevenadressen` fields are removed. 
+    They are now in the new tables `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and 
+    `verblijfsobject_nevenadressen`. 
+  * The `gebruiksdoel` column in the `export_to_csv.py -a` output is now named `gebruiksdoelen`.
+* The adressen table is now created with SQL instead of Python loops
+
 ## V98 - 11 October 2026
 * export_to_csv.py: new options `-o` / `--openbare-ruimten` to export all active openbare ruimten (also those without addresses) and `-w` / `--woonplaatsen` to export all active woonplaatsen (#28)
 

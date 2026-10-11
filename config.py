@@ -1,7 +1,7 @@
 import importlib.util
 import locale
 
-version = 98
+version = 99
 version_date = '11 October 2026'
 
 # Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.
@@ -10,10 +10,10 @@ try:
 except locale.Error:
     locale.setlocale(locale.LC_ALL, '')
 
-# Location of the BAG zip file downloaded from kadaster. See readme.MD
+# Location of the BAG zip file downloaded from kadaster. See README.md
 file_bag = 'input/bag.zip'
 
-# Location of the gemeenten file downloaded from cbs.nl. See readme.MD
+# Location of the gemeenten file downloaded from cbs.nl. See README.md
 file_gemeenten = 'input/gemeenten.csv'
 
 # Output SQLite database with parsed BAG

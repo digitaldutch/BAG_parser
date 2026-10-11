@@ -66,7 +66,7 @@ SELECT
   a.rd_x,
   a.rd_y,
   a.oppervlakte                AS vloeroppervlakte,
-  a.gebruiksdoel,
+  a.gebruiksdoelen,
   a.hoofd_nummer_id
 FROM adressen a
   LEFT JOIN openbare_ruimten o ON a.openbare_ruimte_id = o.id
@@ -116,7 +116,7 @@ Export statistics of 6 character postal code groups (e.g. 1000AA). ~10s
 Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
 ### [utils_sqlite_shrink.py](utils_sqlite_shrink.py)
-Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) 
+Reduces the SQlite database size by removing BAG tables (nummers, verblijfsobjecten and its related tables, panden, ligplaatsen and standplaatsen) 
 that are no longer needed due to the new 'adressen' table.
 The parser also does this as a final step if `delete_no_longer_needed_bag_tables` is set to `True` in [config.py](config.py).
 
@@ -127,12 +127,21 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 * The WGS84 coordinates are calculated using [approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees](docs/Benaderingsformules_RD_WGS.pdf). This conversion has an error of a few decimeters. Don't use the 
 WGS84 coordinates if you need higher accuracy. 
 * verblijfsobjecten table:  
-  Some gebruiksdoel, pand_id and nevenadressen fields contain multiple,
-  comma-separated, values. Be careful if you do queries with joins on those fields.
+  A verblijfsobject can have multiple panden, gebruiksdoelen and nevenadressen. These are stored in the 
+  `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables. 
+  These tables, like the other BAG tables, are deleted if `delete_no_longer_needed_bag_tables` is set to `True`.
 * Adressen table:  
-  * Some gebruiksdoel and pand_id fields contain multiple, comma-separated, values.
-  * The bouwjaar and geometry field only contain the data of one pand, even if an address has multiple panden. 
+  * Some `gebruiksdoelen` and `pand_ids` fields contain multiple, comma-separated, values. 
+  * The bouwjaar and geometry field only contain the data of the first pand, even if an address has multiple panden. 
 * There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
+
+## Breaking changes
+Changes to the database structure that can break your queries or code. See the [changelog](CHANGELOG.md) for all changes.
+* V99 (11 October 2026): In the `adressen` table `pand_id` is renamed to `pand_ids` and `gebruiksdoel` to `gebruiksdoelen` (still comma-separated). 
+  `pand_ids` now contains all panden of an address. The `verblijfsobjecten` table no longer has the `pand_id`, 
+  `gebruiksdoel` and `nevenadressen` fields. They moved to the new `verblijfsobject_panden`, 
+  `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables. 
+  The `gebruiksdoel` column in the CSV export is renamed to `gebruiksdoelen`. 
 
 ## Documents
 * [Praktijkhandleiding BAG](https://imbag.github.io/praktijkhandleiding/) 

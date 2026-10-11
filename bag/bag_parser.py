@@ -34,7 +34,11 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
         status_ok = (not status_active) or (row['status'] == status_active)
         return status_ok and bag_begindatum_valid(row) and bag_einddatum_valid(row)
 
-    data = data_init.copy()
+    def new_data():
+        # Copy lists too, otherwise all rows share the same list objects
+        return {key: value.copy() if isinstance(value, list) else value for key, value in data_init.items()}
+
+    data = new_data()
     coordinates_field = None
     has_geometry = False
     has_3d_geometry = False
@@ -80,7 +84,7 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             if elem.tag == object_tag_name:
                 xml_count += 1
                 db_rows.append(data)
-                data = data_init.copy()
+                data = new_data()
             else:
                 field_found = False
 
@@ -90,7 +94,10 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                     if field_parent_elem:
                         text = elem.text or ''
                         existing_parent_field = data.get(field_parent_elem)
-                        data[field_parent_elem] = f"{existing_parent_field},{text}" if existing_parent_field else text
+                        if isinstance(existing_parent_field, list):
+                            existing_parent_field.append(text)
+                        else:
+                            data[field_parent_elem] = f"{existing_parent_field},{text}" if existing_parent_field else text
                         field_found = True
 
                 if not field_found:
@@ -100,7 +107,10 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
                         if field == 'geometry':
                             text = f'[{text}]'
                         existing_field = data.get(field)
-                        data[field] = f"{existing_field},{text}" if existing_field else text
+                        if isinstance(existing_field, list):
+                            existing_field.append(text)
+                        else:
+                            data[field] = f"{existing_field},{text}" if existing_field else text
 
     # Filter active records
     if config.active_only:
@@ -307,18 +317,20 @@ class BagParser:
             self.data_init['rd_y'] = ''
             self.data_init['latitude'] = ''
             self.data_init['longitude'] = ''
-            self.data_init['nevenadressen'] = ''
-            self.data_init['gebruiksdoel'] = ''
+            # A verblijfsobject can have multiple of these values
+            self.data_init['pand_ids'] = []
+            self.data_init['gebruiksdoelen'] = []
+            self.data_init['nevenadressen'] = []
 
             self.db_fields = {
                 ns_objecten + 'identificatie': 'id',
                 ns_objecten + 'oppervlakte': 'oppervlakte',
-                ns_objecten + 'gebruiksdoel': 'gebruiksdoel',
+                ns_objecten + 'gebruiksdoel': 'gebruiksdoelen',
                 ns_gml + 'pos': 'pos',
                 ns_historie + 'beginGeldigheid': 'begindatum_geldigheid',
                 ns_historie + 'eindGeldigheid': 'einddatum_geldigheid',
                 ns_objecten + 'status': 'status',
-                ns_objecten_ref + 'PandRef': 'pand_id',
+                ns_objecten_ref + 'PandRef': 'pand_ids',
             }
             # 'nummer_id' is used for both hoofdadres and nevenadres gebruikt
             # Therefore, identification is done by combining the tag with the parent tag

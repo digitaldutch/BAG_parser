@@ -139,14 +139,26 @@ class DatabaseSqlite:
     def save_verblijfsobject(self, data):
         # Note: Use REPLACE, because BAG does not always contain unique id's
         self.connection.execute(
-            """REPLACE INTO verblijfsobjecten (id, nummer_id, pand_id, oppervlakte, rd_x, rd_y, latitude, longitude, 
-            gebruiksdoel, nevenadressen, status, begindatum_geldigheid, einddatum_geldigheid) 
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """REPLACE INTO verblijfsobjecten (id, nummer_id, oppervlakte, rd_x, rd_y, latitude, longitude,
+            status, begindatum_geldigheid, einddatum_geldigheid)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
-            (data["id"], data["nummer_id"], data["pand_id"], data["oppervlakte"], data["rd_x"], data["rd_y"],
-             data["latitude"], data["longitude"], data["gebruiksdoel"], data["nevenadressen"], data["status"],
+            (data["id"], data["nummer_id"], data["oppervlakte"], data["rd_x"], data["rd_y"],
+             data["latitude"], data["longitude"], data["status"],
              data["begindatum_geldigheid"], data["einddatum_geldigheid"])
         )
+
+        # Fields that can have multiple values are saved in separate tables
+        verblijfsobject_id = data["id"]
+        self.connection.executemany(
+            "INSERT INTO verblijfsobject_panden (verblijfsobject_id, pand_id) VALUES (?, ?);",
+            [(verblijfsobject_id, pand_id) for pand_id in data["pand_ids"]])
+        self.connection.executemany(
+            "INSERT INTO verblijfsobject_gebruiksdoelen (verblijfsobject_id, gebruiksdoel) VALUES (?, ?);",
+            [(verblijfsobject_id, gebruiksdoel) for gebruiksdoel in data["gebruiksdoelen"]])
+        self.connection.executemany(
+            "INSERT INTO verblijfsobject_nevenadressen (verblijfsobject_id, nummer_id) VALUES (?, ?);",
+            [(verblijfsobject_id, nummer_id) for nummer_id in data["nevenadressen"]])
 
     def save_ligplaats(self, data):
         # Note: Use REPLACE, because BAG does not always contain unique id's
@@ -239,18 +251,31 @@ class DatabaseSqlite:
             DROP TABLE IF EXISTS verblijfsobjecten;
             CREATE TABLE verblijfsobjecten (
                 id TEXT PRIMARY KEY, 
-                nummer_id TEXT, 
-                pand_id TEXT, 
-                oppervlakte FLOAT, 
-                rd_x FLOAT, 
-                rd_y FLOAT, 
-                latitude FLOAT, 
-                longitude FLOAT, 
-                gebruiksdoel TEXT, 
-                nevenadressen TEXT,
-                status TEXT, 
-                begindatum_geldigheid TEXT, 
-                einddatum_geldigheid TEXT);           
+                nummer_id TEXT,
+                oppervlakte FLOAT,
+                rd_x FLOAT,
+                rd_y FLOAT,
+                latitude FLOAT,
+                longitude FLOAT,
+                status TEXT,
+                begindatum_geldigheid TEXT,
+                einddatum_geldigheid TEXT);
+
+            -- A verblijfsobject can have multiple panden, gebruiksdoelen and nevenadressen
+            DROP TABLE IF EXISTS verblijfsobject_panden;
+            CREATE TABLE verblijfsobject_panden (
+                verblijfsobject_id TEXT,
+                pand_id TEXT);
+
+            DROP TABLE IF EXISTS verblijfsobject_gebruiksdoelen;
+            CREATE TABLE verblijfsobject_gebruiksdoelen (
+                verblijfsobject_id TEXT,
+                gebruiksdoel TEXT);
+
+            DROP TABLE IF EXISTS verblijfsobject_nevenadressen;
+            CREATE TABLE verblijfsobject_nevenadressen (
+                verblijfsobject_id TEXT,
+                nummer_id TEXT);
 
             DROP TABLE IF EXISTS ligplaatsen;
             CREATE TABLE ligplaatsen (
@@ -283,6 +308,15 @@ class DatabaseSqlite:
     def create_indices_bag(self):
         self.connection.executescript("""
             CREATE INDEX IF NOT EXISTS idx_verblijfsobjecten_nummer_id ON verblijfsobjecten (nummer_id);
+
+            CREATE INDEX IF NOT EXISTS idx_verblijfsobject_panden_verblijfsobject_id
+              ON verblijfsobject_panden (verblijfsobject_id);
+
+            CREATE INDEX IF NOT EXISTS idx_verblijfsobject_gebruiksdoelen_verblijfsobject_id
+              ON verblijfsobject_gebruiksdoelen (verblijfsobject_id);
+
+            CREATE INDEX IF NOT EXISTS idx_verblijfsobject_nevenadressen_verblijfsobject_id
+              ON verblijfsobject_nevenadressen (verblijfsobject_id);
             
             CREATE INDEX IF NOT EXISTS idx_ligplaatsen_nummer_id ON ligplaatsen (nummer_id);
 
@@ -299,6 +333,9 @@ class DatabaseSqlite:
 
     def create_adressen_from_bag(self):
 
+        utils.print_log('create adressen tabel: combine verblijfsobject panden en gebruiksdoelen')
+        self.adressen_create_temp_tables_verblijfsobjecten()
+
         utils.print_log('create adressen tabel: import adressen')
         self.connection.executescript(f"""
             DROP TABLE IF EXISTS adressen;
@@ -307,15 +344,15 @@ class DatabaseSqlite:
                 nummer_id TEXT PRIMARY KEY, 
                 nummer_begindatum_geldigheid TEXT, 
                 nummer_einddatum_geldigheid TEXT, 
-                pand_id TEXT, 
-                pand_begindatum_geldigheid TEXT, 
-                pand_einddatum_geldigheid TEXT, 
-                verblijfsobject_id TEXT, 
-                gemeente_id INTEGER, 
-                woonplaats_id INTEGER, 
-                openbare_ruimte_id TEXT, 
-                object_type TEXT, 
-                gebruiksdoel TEXT, 
+                pand_ids TEXT,
+                pand_begindatum_geldigheid TEXT,
+                pand_einddatum_geldigheid TEXT,
+                verblijfsobject_id TEXT,
+                gemeente_id INTEGER,
+                woonplaats_id INTEGER,
+                openbare_ruimte_id TEXT,
+                object_type TEXT,
+                gebruiksdoelen TEXT,  
                 postcode TEXT, 
                 huisnummer INTEGER, 
                 huisletter TEXT, 
@@ -333,15 +370,15 @@ class DatabaseSqlite:
                 nummer_id, 
                 nummer_begindatum_geldigheid, 
                 nummer_einddatum_geldigheid, 
-                pand_id, 
-                pand_begindatum_geldigheid, 
-                pand_einddatum_geldigheid, 
-                verblijfsobject_id, 
-                gemeente_id, 
-                woonplaats_id, 
-                openbare_ruimte_id, 
-                object_type, 
-                gebruiksdoel, 
+                pand_ids,
+                pand_begindatum_geldigheid,
+                pand_einddatum_geldigheid,
+                verblijfsobject_id,
+                gemeente_id,
+                woonplaats_id,
+                openbare_ruimte_id,
+                object_type,
+                gebruiksdoelen,  
                 postcode, 
                 huisnummer, 
                 huisletter, 
@@ -357,7 +394,7 @@ class DatabaseSqlite:
                 n.id AS nummer_id,
                 n.begindatum_geldigheid,
                 n.einddatum_geldigheid,
-                p.id,
+                vp.pand_ids,
                 p.begindatum_geldigheid,
                 p.einddatum_geldigheid,
                 v.id AS verblijfsobject_id,
@@ -365,7 +402,7 @@ class DatabaseSqlite:
                 o.woonplaats_id,
                 o.id,
                 'verblijfsobject',
-                v.gebruiksdoel,
+                vg.gebruiksdoelen,
                 n.postcode,
                 n.huisnummer,
                 n.huisletter,
@@ -381,11 +418,10 @@ class DatabaseSqlite:
             LEFT JOIN openbare_ruimten o  ON o.id            = n.openbare_ruimte_id
             LEFT JOIN woonplaatsen w      ON w.id            = o.woonplaats_id
             LEFT JOIN verblijfsobjecten v ON v.nummer_id     = n.id
-            LEFT JOIN panden p            ON v.pand_id       = p.id;
+            LEFT JOIN temp_vbo_panden vp  ON vp.verblijfsobject_id = v.id
+            LEFT JOIN temp_vbo_gebruiksdoelen vg ON vg.verblijfsobject_id = v.id
+            LEFT JOIN panden p            ON p.id            = vp.eerste_pand_id;
         """)
-
-        utils.print_log('create adressen tabel: importeer pand info voor adressen met meerdere panden')
-        self.adressen_import_meerdere_panden()
 
         utils.print_log('create adressen tabel: import ligplaatsen data')
         self.adressen_import_ligplaatsen()
@@ -404,47 +440,34 @@ class DatabaseSqlite:
 
         self.connection.commit()
 
-    def adressen_import_meerdere_panden(self):
-
+    def adressen_create_temp_tables_verblijfsobjecten(self):
+        # A verblijfsobject can have multiple panden and gebruiksdoelen. The adressen table has one row per address,
+        # so they are combined in comma-separated fields. Only existing (active) panden are included.
+        # The bouwjaar and geometry fields of an adres only contain the data of the first pand.
         self.connection.executescript("""
-            DROP TABLE IF EXISTS temp_pand_ids;
-            
-            CREATE TEMP TABLE temp_pand_ids (
-            nummer_id TEXT,
-            pand_id TEXT
-        );""")
+            DROP TABLE IF EXISTS temp_vbo_panden;
+            CREATE TEMP TABLE temp_vbo_panden AS
+              SELECT
+                verblijfsobject_id,
+                GROUP_CONCAT(pand_id) AS pand_ids,
+                pand_id               AS eerste_pand_id,
+                MIN(rid)
+              FROM (
+                SELECT vp.rowid AS rid, vp.verblijfsobject_id, vp.pand_id
+                FROM verblijfsobject_panden vp
+                  INNER JOIN panden ON panden.id = vp.pand_id
+                ORDER BY vp.rowid
+              )
+              GROUP BY verblijfsobject_id;
+            CREATE INDEX temp.idx_temp_vbo_panden ON temp_vbo_panden (verblijfsobject_id);
 
-        adressen = self.fetchall("SELECT nummer_id, pand_id FROM verblijfsobjecten WHERE pand_id LIKE '%,%'")
-
-        parameters = []
-        for adres in adressen:
-            pand_ids = adres[1].split(',')
-            for pand_id in pand_ids:
-                parameters.append([adres[0], pand_id])
-
-        sql = "INSERT INTO temp_pand_ids (nummer_id, pand_id) VALUES (?, ?)"
-        self.connection.executemany(sql, parameters)
-
-        # Copy bouwjaar and geometry to adressen table. Only last one remains.
-        # Maybe add a multi-bouwjaar and multi-geometry option later.
-        self.connection.executescript("""
-            UPDATE adressen SET
-              geometry = p.geometry,
-              bouwjaar = p.bouwjaar
-            FROM (
-                   SELECT
-                     t.pand_id,
-                     t.nummer_id,
-                     panden.geometry,
-                     panden.bouwjaar
-                   FROM temp_pand_ids t
-                          LEFT JOIN panden ON panden.id = t.pand_id
-                 ) AS p
-            WHERE p.nummer_id = adressen.nummer_id;
+            DROP TABLE IF EXISTS temp_vbo_gebruiksdoelen;
+            CREATE TEMP TABLE temp_vbo_gebruiksdoelen AS
+              SELECT verblijfsobject_id, GROUP_CONCAT(gebruiksdoel) AS gebruiksdoelen
+              FROM (SELECT verblijfsobject_id, gebruiksdoel FROM verblijfsobject_gebruiksdoelen ORDER BY rowid)
+              GROUP BY verblijfsobject_id;
+            CREATE INDEX temp.idx_temp_vbo_gebruiksdoelen ON temp_vbo_gebruiksdoelen (verblijfsobject_id);
         """)
-
-        self.connection.commit()
-
 
     def adressen_import_ligplaatsen(self):
         self.connection.executescript("""
@@ -476,29 +499,22 @@ class DatabaseSqlite:
 
         self.connection.executescript("""
             DROP TABLE IF EXISTS nevenadressen;
-            
-            CREATE TEMP TABLE nevenadressen (
-            neven_nummer_id TEXT PRIMARY KEY,
-            hoofd_nummer_id TEXT
-        );""")
 
-        adressen = self.fetchall("SELECT nummer_id, nevenadressen FROM verblijfsobjecten WHERE nevenadressen <> ''")
-        parameters = []
-        for adres in adressen:
-            neven_nummer_ids = adres[1].split(',')
-            for neven_id in neven_nummer_ids:
-                parameters.append([adres[0], neven_id])
-
-        sql = "INSERT INTO nevenadressen (hoofd_nummer_id, neven_nummer_id) VALUES (?, ?)"
-        self.connection.executemany(sql, parameters)
-        self.connection.commit()
+            CREATE TEMP TABLE nevenadressen AS
+              SELECT
+                vn.nummer_id AS neven_nummer_id,
+                v.nummer_id  AS hoofd_nummer_id
+              FROM verblijfsobject_nevenadressen vn
+                INNER JOIN verblijfsobjecten v ON v.id = vn.verblijfsobject_id;
+            CREATE INDEX temp.idx_temp_nevenadressen ON nevenadressen (neven_nummer_id);
+        """)
 
         self.connection.executescript("""
             UPDATE adressen SET
                 hoofd_nummer_id = n.hoofd_nummer_id,
-                pand_id = n.pand_id,
+                pand_ids = n.pand_ids,
                 verblijfsobject_id = n.verblijfsobject_id,
-                gebruiksdoel = n.gebruiksdoel,
+                gebruiksdoelen = n.gebruiksdoelen,
                 oppervlakte = n.oppervlakte,
                 rd_x = n.rd_x,
                 rd_y = n.rd_y,
@@ -510,9 +526,9 @@ class DatabaseSqlite:
                 SELECT
                     nevenadressen.hoofd_nummer_id,
                     nevenadressen.neven_nummer_id,
-                    adressen.pand_id,
+                    adressen.pand_ids,
                     adressen.verblijfsobject_id,
-                    adressen.gebruiksdoel,
+                    adressen.gebruiksdoelen,
                     adressen.oppervlakte,
                     adressen.rd_x,
                     adressen.rd_y,
@@ -541,8 +557,11 @@ class DatabaseSqlite:
     def delete_no_longer_needed_bag_tables(self):
         self.connection.executescript("""
           DROP TABLE IF EXISTS nummers; 
-          DROP TABLE IF EXISTS panden; 
-          DROP TABLE IF EXISTS verblijfsobjecten; 
+          DROP TABLE IF EXISTS panden;
+          DROP TABLE IF EXISTS verblijfsobjecten;
+          DROP TABLE IF EXISTS verblijfsobject_panden;
+          DROP TABLE IF EXISTS verblijfsobject_gebruiksdoelen;
+          DROP TABLE IF EXISTS verblijfsobject_nevenadressen;
           DROP TABLE IF EXISTS ligplaatsen; 
           DROP TABLE IF EXISTS standplaatsen; 
         """)
@@ -554,7 +573,7 @@ class DatabaseSqlite:
 
         # Amsterdam heeft een reeks van panden met dummy bouwjaar 1005
         # https://www.amsterdam.nl/stelselpedia/bag-index/catalogus-bag/objectklasse-pand/bouwjaar-pand/
-        panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar=1005;")
+        panden = self.fetchall(f"SELECT pand_ids, bouwjaar FROM adressen WHERE bouwjaar=1005;")
         aantal = len(panden)
         utils.print_log(f"fix: test adressen met dummy bouwjaar 1005 in Amsterdam: {aantal: n}")
         if aantal > 0:
@@ -563,7 +582,7 @@ class DatabaseSqlite:
 
         # The BAG contains some buildings with bouwjaar 9999
         last_valid_build_year = 2040
-        panden = self.fetchall(f"SELECT pand_id, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
+        panden = self.fetchall(f"SELECT pand_ids, bouwjaar FROM adressen WHERE bouwjaar > {last_valid_build_year}")
         aantal = len(panden)
 
         utils.print_log(f"fix: test adressen met ongeldig bouwjaar > {last_valid_build_year}: {aantal: n}")
@@ -682,17 +701,17 @@ class DatabaseSqlite:
         if is_error: total_error_count += 1
         utils.print_log_check("test: gemeentenamen moeten in UTF-8 zijn: " + naam, is_error)
 
-        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_id IS NOT NULL;")
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE adressen.latitude IS NULL AND pand_ids IS NOT NULL;")
         total_error_count += count
         utils.print_log_check("test: panden zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                               "WHERE adressen.latitude IS NULL AND gebruiksdoel='ligplaats';")
+                               "WHERE adressen.latitude IS NULL AND gebruiksdoelen='ligplaats';")
         total_error_count += count
         utils.print_log_check("test: ligplaatsen zonder locatie: " + str(count), count > 0)
 
         count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                              "WHERE adressen.latitude IS NULL AND gebruiksdoel='standplaats';")
+                              "WHERE adressen.latitude IS NULL AND gebruiksdoelen='standplaats';")
         total_error_count += count
         utils.print_log_check("test: standplaatsen zonder locatie: " + str(count), count > 0)
 
@@ -708,7 +727,7 @@ class DatabaseSqlite:
         if is_error: total_error_count += 1
         utils.print_log_check(f"info: adressen: {count:n}", is_error)
 
-        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_id IS NOT NULL;")
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE pand_ids IS NOT NULL;")
         is_error = count < 9000000
         if is_error: total_error_count += 1
         utils.print_log_check(f"info: panden: {count:n}", is_error)

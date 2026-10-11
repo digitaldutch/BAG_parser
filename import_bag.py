@@ -25,7 +25,7 @@ def main():
     utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
 
     if not os.path.exists(config.file_bag):
-        sys.exit('BAG file not found. See readme.MD')
+        sys.exit('BAG file not found. See README.md')
 
     temp_folder_name = 'temp'
 
