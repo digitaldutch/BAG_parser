@@ -2,7 +2,10 @@ import time
 import utils
 import locale
 
-locale.setlocale(locale.LC_ALL, 'en_US')
+try:
+    locale.setlocale(locale.LC_ALL, 'en_US')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, '')
 
 class StatusUpdater:
     last_update_time = None

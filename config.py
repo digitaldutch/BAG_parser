@@ -4,7 +4,11 @@ import locale
 version = 95
 version_date = '30 July 2026'
 
-locale.setlocale(locale.LC_ALL, 'nl_NL')
+# Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.
+try:
+    locale.setlocale(locale.LC_ALL, 'nl_NL')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, '')
 
 # Location of the BAG zip file downloaded from kadaster. See readme.MD
 file_bag = 'input/bag.zip'
