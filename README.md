@@ -34,7 +34,7 @@ table. The SQLite database can be used directly as a source to generate a *.csv 
 databases. There are a couple of options available in the [config.py](config.py).
 
 ## Requirements
-* Python 3.11 or newer.
+* Python 3.11 or newer. Tested with Python 3.11 and 3.15.
 * Optional: the `psutil` package (`pip install -r requirements.txt`). It is used to detect the number of physical CPU cores for the best performance. Without it the parser uses 8 cores.
 
 ## Usage
