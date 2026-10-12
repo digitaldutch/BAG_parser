@@ -11,6 +11,8 @@ without asking. See [README.md](README.md).
 * `import_bag.py` - main entry point: reads `input/bag.zip`, writes the SQLite database to `output/`.
 * `export_to_csv.py` - exports the SQLite database to CSV.
 * `test_sqlite_db.py` - data sanity checks on the generated SQLite database (run after an import; not a unit-test suite).
+* `validate_coordinates.py` - validates the RD to latitude/longitude conversion against official Kadaster GNSS stations (RDinfo).
+* `validate_coordinates_with_pdok.py` - compares RD positions of addresses in the database with the PDOK BAG API.
 * `config.py` - user options, plus `version` and `version_date`.
 * `bag/` - XML parsers (`bag_parser.py`, `gemeente_parser.py`) and RD to latitude/longitude conversion (`coordinates.py`, uses pyproj).
 * `proj/` - the RDNAPTRANS2018 grid file (CC BY 4.0, see `proj/README.txt`) that makes the conversion accurate. Do not remove it.

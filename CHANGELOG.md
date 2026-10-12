@@ -1,5 +1,11 @@
 # Changelog
 
+## V107 - 12 October 2026
+* New script validate_coordinates_with_pdok.py: compares the RD coordinates of addresses in the SQLite database with the BAG API
+  of PDOK. This checks if the parser reads the correct positions from the BAG. Needs internet access, not pyproj.
+* Readme: new Coordinates section that explains the coordinate fields, where the position of an address comes from, the conversion,
+  ETRS89 and WGS84, and the checks. The credits for the grid file and the RDinfo data are in the new Acknowledgements section.
+
 ## V106 - 12 October 2026
 * The startup check of the coordinate conversion now uses 10 official GNSS stations of the Kadaster (RDinfo, open data)
   as reference. These have official RD and ETRS89 coordinates. The maximum allowed difference is 1 cm (was 3 cm).

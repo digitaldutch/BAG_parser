@@ -27,7 +27,7 @@ expect named
 ## What this parser does
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
-to latitude and longitude coordinates in ETRS89, the European standard, which can be used as WGS84 (see [Limitations and notes](#limitations-and-notes)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
+to latitude and longitude coordinates in ETRS89, the European standard, which can be used as WGS84 (see [Coordinates](#coordinates)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
 Construction year, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
@@ -163,6 +163,18 @@ Run this script now and then, for example after updating `pyproj`, because the K
 -u, --update-reference-points  
 Update the 10 reference points in `bag/coordinates.py` with the latest RDinfo data.
 
+### [validate_coordinates_with_pdok.py](validate_coordinates_with_pdok.py)
+Checks if the parser reads the correct positions from the BAG. It takes addresses that are evenly spread over the SQLite database
+and compares their RD coordinates (`rd_x` and `rd_y`) with the BAG API of [PDOK](https://api.pdok.nl/kadaster/bag/ogc/v2).
+They should be equal. It needs internet access, but not `pyproj`. A difference can also be caused by a change in the BAG
+since the extract that you parsed. This is different from `validate_coordinates.py`, which checks the conversion to latitude and longitude.
+
+-n, --count  
+Number of addresses to compare (default: 20)
+
+-d, --database  
+SQLite database to check (default: the database in [config.py](config.py))
+
 ### [test_sqlite_db.py](test_sqlite_db.py)
 Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
@@ -174,25 +186,55 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 ## Adressen table
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 
 
+## Coordinates
+The BAG gives positions as Rijksdriehoekscoördinaten (RD), a flat map system of the Netherlands in meters. The parser keeps
+these and also converts them to latitude and longitude. The latitude and longitude are in ETRS89, the European standard,
+and you can use them as WGS84 (the system of GPS, OpenStreetMap and Google Maps).
+
+### Fields
+* `rd_x` and `rd_y`: the position in RD (meters), as in the BAG.
+* `latitude` and `longitude`: the same position in degrees (ETRS89, used as WGS84).
+* `geometry`: only filled if `parse_geometries` is enabled in [config.py](config.py). The outline of the pand (in the
+  adressen table), ligplaats, standplaats or woonplaats as JSON: a list of rings with [longitude, latitude] pairs, the
+  order that GeoJSON uses.
+
+### Where the position of an address comes from
+* A verblijfsobject: its point. If the BAG has a polygon instead of a point, the centre (centroid) of the polygon.
+* A ligplaats or standplaats: the first corner of its polygon.
+* A nevenadres: the position of its hoofdadres.
+* An address without a verblijfsobject, ligplaats or standplaats has no position (NULL).
+
+### Conversion and accuracy
+* The conversion uses the official transformation [RDNAPTRANS2018](https://www.nsgi.nl/rdnaptrans) of the NSGI, with
+  `pyproj` and the correction grid in the [proj](proj) folder.
+* It was validated against the 442 official GNSS stations of the Kadaster
+  ([RDinfo](https://api.pdok.nl/kadaster/rdinfo/ogc/v1)): the difference is at most 0.3 millimeter.
+* The RD positions that the parser reads from the BAG were compared with the BAG API of
+  [PDOK](https://api.pdok.nl/kadaster/bag/ogc/v2) and were equal.
+
+### ETRS89 and WGS84
+* ETRS89 is the European reference system that RD is officially tied to. The European INSPIRE directive and EUREF
+  recommend it for geographic data.
+* ETRS89 is fixed to the Eurasian plate. WGS84 is fixed to the globe. They were equal in 1989. The difference in the
+  Netherlands was about 88 cm on 1 January 2025 and grows about 2.4 cm per year. The ETRS89 coordinates of a point stay
+  the same, the WGS84 coordinates of that point slowly change.
+* The parser uses the ETRS89 latitude and longitude as WGS84, without a further transformation. The
+  [Geonovum guideline](https://docs.geostandaarden.nl/crs/crs/) (section 3.3.2.2.1) describes this as treating WGS 84 as
+  equal to ETRS89. It is suited for data from RD that is used for visualisation or combined with other data. PDOK, the
+  open data platform of the Kadaster, also serves its ETRS89 and WGS84 coordinates as the same values.
+* This is negligible for maps and apps. If you need exact WGS84 coordinates for a specific date, you have to apply a
+  time-dependent transformation yourself.
+
+### Checks
+* At startup the parser checks the conversion with 10 official GNSS stations. It stops with a clear message if something
+  is wrong, for example if the grid file is missing.
+* The database tests (`import_bag.py` and `test_sqlite_db.py`) check that the stored latitude and longitude match the
+  conversion of the RD coordinates for a sample of addresses, and that all addresses are inside the Netherlands.
+* [validate_coordinates.py](#validate_coordinatespy) validates the conversion against all official GNSS stations.
+* [validate_coordinates_with_pdok.py](#validate_coordinates_with_pdokpy) compares positions of addresses with PDOK.
+
 ## Limitations and notes
-* Coordinates:
-  * The BAG has Rijksdriehoekscoördinaten (RD). The parser converts them to latitude and longitude in **ETRS89**
-    (EPSG:4258). This is the European reference system that RD is officially tied to, and the one that the European
-    INSPIRE directive and EUREF recommend for geographic data.
-  * The conversion uses the official transformation [RDNAPTRANS2018](https://www.nsgi.nl/rdnaptrans) of the NSGI, with
-    `pyproj` and the correction grid in the [proj](proj) folder. It was validated against the 442 official GNSS stations
-    of the Kadaster ([RDinfo](https://api.pdok.nl/kadaster/rdinfo/ogc/v1)): the difference is at most 0.3 millimeter.
-  * The latitude and longitude are used as WGS84 (the system of GPS, OpenStreetMap and Google Maps) without a further
-    transformation. The [Geonovum guideline](https://docs.geostandaarden.nl/crs/crs/) (section 3.3.2.2.1) describes this
-    as treating WGS 84 as equal to ETRS89, which is suited for data from RD that is used for visualisation or combined
-    with other data. PDOK, the open data platform of the Kadaster, also serves its ETRS89 and WGS84 coordinates as the
-    same values.
-  * The difference: ETRS89 is fixed to the Eurasian plate and WGS84 to the globe. They were equal in 1989. The difference
-    in the Netherlands was about 88 cm on 1 January 2025 and grows about 2.4 cm per year. The ETRS89 coordinates of a
-    point stay the same, the WGS84 coordinates of that point slowly change. This is negligible for maps and apps.
-    If you need exact WGS84 coordinates for a specific date, you have to apply a time-dependent transformation yourself.
-  * The grid file `nl_nsgi_rdtrans2018.tif` is © NSGI, license [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-    See [proj/README.txt](proj/README.txt).
+* Coordinates: see the [Coordinates](#coordinates) section.
 * verblijfsobjecten table:  
   A verblijfsobject can have multiple panden, gebruiksdoelen and nevenadressen. These are stored in the 
   `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables. 
@@ -233,3 +275,12 @@ Bert hubert has [written a parser](https://berthub.eu/articles/posts/dutch-postc
 
 ## License
 This software is made available under the [MIT license](LICENSE).
+
+## Acknowledgements
+* The grid file `nl_nsgi_rdtrans2018.tif` in the [proj](proj) folder is part of the official coordinate transformation
+  RDNAPTRANS2018. © NSGI (Nederlandse Samenwerking Geodetische Infrastructuur), converted to GeoTIFF and distributed by
+  [PROJ-data](https://github.com/OSGeo/PROJ-data). License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  See [proj/README.txt](proj/README.txt).
+* The official GNSS stations that are used to check the coordinate conversion come from RDinfo, open data of the
+  Kadaster (license PDM 1.0, public domain), published on [PDOK](https://api.pdok.nl/kadaster/rdinfo/ogc/v1).
+* The conversion is done with [pyproj](https://pyproj4.github.io/pyproj/) and the PROJ library.
