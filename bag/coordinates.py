@@ -116,7 +116,7 @@ def describe(coordinate_system=None, epoch=None):
     if coordinate_system == WGS84:
         epoch = epoch if epoch is not None else get_epoch()
         return f"WGS84 for epoch {epoch:.3f} ({epoch_to_date(epoch)})"
-    return "ETRS89 (EPSG:4258), used as WGS84"
+    return "ETRS89 (EPSG:4258)"
 
 
 def rd_to_etrs89(x, y):

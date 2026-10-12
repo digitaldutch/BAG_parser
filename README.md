@@ -27,7 +27,7 @@ expect named
 ## What this parser does
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
-to latitude and longitude coordinates in ETRS89, the European standard, which can be used as WGS84 (see [Coordinates](#coordinates)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
+to latitude and longitude coordinates: ETRS89 (the European standard, which you can use as WGS84) or, if you choose, exact WGS84 (see [Coordinates](#coordinates)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
 Construction year, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
@@ -35,7 +35,7 @@ databases. There are a couple of options available in the [config.py](config.py)
 
 ## Requirements
 * Python 3.11 or newer. Tested with Python 3.11 and 3.15.
-* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89) with very high accuracy. The parser also needs the grid file in the [proj](proj) folder.
+* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89 or WGS84, see [Coordinates](#coordinates)) with very high accuracy. The parser also needs the grid file in the [proj](proj) folder.
   It is included, so you don't have to download anything.
 * The `psutil` package. Optional. It detects the number of physical CPU cores for the best performance.
   Without it the parser shows a warning and uses the number of logical CPU cores, which can be higher
@@ -189,12 +189,13 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 
 ## Coordinates
 The BAG gives positions as Rijksdriehoekscoördinaten (RD), a flat map system of the Netherlands in meters. The parser keeps
-these and also converts them to latitude and longitude. The latitude and longitude are in ETRS89, the European standard,
-and you can use them as WGS84 (the system of GPS, OpenStreetMap and Google Maps).
+these and also converts them to latitude and longitude. By default the latitude and longitude are in ETRS89, the European
+standard, which you can use as WGS84 (the system of GPS, OpenStreetMap and Google Maps). You can also choose exact WGS84,
+see [Options](#options).
 
 ### Fields
 * `rd_x` and `rd_y`: the position in RD (meters), as in the BAG.
-* `latitude` and `longitude`: the same position in degrees (ETRS89, used as WGS84).
+* `latitude` and `longitude`: the same position in degrees (ETRS89 by default, or WGS84, see [Options](#options)).
 * `geometry`: only filled if `parse_geometries` is enabled in [config.py](config.py). The outline of the pand (in the
   adressen table), ligplaats, standplaats or woonplaats as JSON: a list of rings with [longitude, latitude] pairs, the
   order that GeoJSON uses.
@@ -223,21 +224,13 @@ and you can use them as WGS84 (the system of GPS, OpenStreetMap and Google Maps)
   [Geonovum guideline](https://docs.geostandaarden.nl/crs/crs/) (section 3.3.2.2.1) describes this as treating WGS 84 as
   equal to ETRS89. It is suited for data from RD that is used for visualisation or combined with other data. PDOK, the
   open data platform of the Kadaster, also serves its ETRS89 and WGS84 coordinates as the same values.
-* This is negligible for maps and apps. If you need exact WGS84 coordinates for a specific date, you have to apply a
-  time-dependent transformation yourself.
+* This is negligible for maps and apps. If you need exact WGS84 coordinates for a specific date, you can select it in [config.py](config.py).
 
 ### Options
-* `coordinate_system` in [config.py](config.py): `'ETRS89'` (default) or `'WGS84'`.
-* `'WGS84'` gives exact WGS84 latitude and longitude, using a time-dependent transformation from ETRS89 for an epoch (a
-  date). The coordinates are about 0.9 meter different from the ETRS89 ones (in 2026) and depend on the epoch.
-* `wgs84_epoch` in [config.py](config.py): the epoch as a decimal year (`2026.5`) or a date (`'2026-06-30'`). The default
-  `None` means today, the date of the import. Use a fixed epoch if you want the same coordinates every time.
-* The parser shows the coordinate system and the epoch in the log, for example
-  `coordinates: WGS84 for epoch 2026.784 (2026-10-12)`. It also saves them in the `bag_info` table of the database
-  (`coordinate_system` and `wgs84_epoch`), together with the version of the parser and the date of the import.
-  The database tests use this table.
-* The Firebird updater and other users of the database get the coordinates of the chosen system. Do not mix databases with
-  different epochs if centimeters matter.
+Choose ETRS89 (default) or exact WGS84 with `coordinate_system` and `wgs84_epoch` in [config.py](config.py). The options are
+explained there. The parser shows the coordinate system and the epoch in the log, for example
+`coordinates: WGS84 for epoch 2026.784 (2026-10-12)`, and saves them in the `bag_info` table of the database
+(`coordinate_system`, `wgs84_epoch`, `parser_version` and `import_date`). The database tests use this table.
 
 ### Checks
 * At startup the parser checks the conversion with 10 official GNSS stations. It stops with a clear message if something

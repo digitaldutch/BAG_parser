@@ -2,7 +2,7 @@ import importlib.util
 import locale
 import os
 
-version = 109
+version = 110
 version_date = '12 October 2026'
 
 # At startup the parser checks if a newer version is available on GitHub.
@@ -20,6 +20,8 @@ coordinate_system = 'ETRS89'
 
 # Epoch (date) for the WGS84 coordinates, if coordinate_system is 'WGS84'. Use a decimal year (2026.5) or a date ('2026-06-30').
 # None means today (the date of the import). The epoch is shown in the log and saved in the bag_info table.
+# Use a fixed epoch if you want the same coordinates every time. Do not mix databases with different epochs if
+# centimeters matter.
 wgs84_epoch = None
 
 # Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.

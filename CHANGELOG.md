@@ -1,5 +1,10 @@
 # Changelog
 
+## V110 - 12 October 2026
+* The log says `coordinates: ETRS89 (EPSG:4258)`, without ", used as WGS84". The explanation is in the Coordinates section of the readme.
+* Readme: the places that only mentioned ETRS89 now say that you can also choose WGS84 (coordinate_system option).
+  The explanation of the options is now in config.py. The readme only points to it.
+
 ## V109 - 12 October 2026
 * Without the optional `psutil` package the parser now uses the number of logical CPU cores (os.cpu_count) instead of a fixed
   8 cores. The warning shows the number that is used.
