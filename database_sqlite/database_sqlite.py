@@ -760,15 +760,16 @@ class DatabaseSqlite:
                 max_error = max(max_error, error)
                 if error > coordinates.MAX_ERROR_METERS: wrong_count += 1
             if wrong_count > 0: total_error_count += 1
-            utils.print_log_check(f"test: opgeslagen coordinaten wijken af van RDNAPTRANS2018: {wrong_count} van "
+            utils.print_log_check(f"test: "
+                                  f"adressen met verkeerde coördinaten: {wrong_count} van "
                                   f"{len(rows)} adressen (max {max_error:.3f} m)", wrong_count > 0)
 
-        # Rondom de Onze Lieve Vrouwetoren (Lange Jan) in Amersfoort (52.15517, 5.38720) moeten adressen liggen
-        count = self.fetchone("SELECT COUNT(*) FROM adressen "
-                              "WHERE latitude BETWEEN 52.1543 AND 52.1561 AND longitude BETWEEN 5.3857 AND 5.3887;")
-        is_error = count == 0
-        if is_error: total_error_count += 1
-        utils.print_log_check(f"test: adressen binnen 100 meter van de Lange Jan in Amersfoort: {count}", is_error)
+        # Alle adressen met een locatie moeten binnen de grenzen van Nederland liggen. Dit vangt grove fouten, zoals
+        # omgewisselde latitude en longitude of een verkeerd coordinatenstelsel.
+        count = self.fetchone("SELECT COUNT(*) FROM adressen WHERE typeof(latitude) = 'real' "
+                              "AND NOT (latitude BETWEEN 50.7 AND 53.6 AND longitude BETWEEN 3.3 AND 7.3);")
+        total_error_count += count
+        utils.print_log_check(f"test: adressen buiten de grenzen van Nederland: {count}", count > 0)
 
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id FROM adressen WHERE postcode='1181BN' AND huisnummer=1;")

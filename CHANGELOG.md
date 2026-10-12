@@ -1,5 +1,9 @@
 # Changelog
 
+## V105 - 12 October 2026
+* The database test for addresses near the Lange Jan is replaced by a test that checks that all addresses are inside
+  the borders of the Netherlands. This catches wrong coordinates for every address, for example swapped latitude and longitude.
+
 ## V104 - 12 October 2026
 * Fixed: Verblijfsobjecten with a polygon geometry instead of a point had no coordinates (about 800 addresses).
   The location is now the centroid of the polygon.
