@@ -1,5 +1,9 @@
 # Changelog
 
+## V111 - 12 October 2026
+* export_to_csv.py: the option `-a` / `--all` is renamed to `-a` / `--adressen`, because it exports all address data, not all BAG data
+  (#28). The old name `--all` still works.
+
 ## V110 - 12 October 2026
 * The log says `coordinates: ETRS89 (EPSG:4258)`, without ", used as WGS84". The explanation is in the Coordinates section of the readme.
 * Readme: the places that only mentioned ETRS89 now say that you can also choose WGS84 (coordinate_system option).

@@ -132,12 +132,12 @@ on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries
 Exports the addresses in SQLite database to a *.csv file. By default, only the addresses and
 postcode data are exported (~15 seconds). Use the command options below for more output formats.  
 
--a, --all  
-Export all data including year of construction, latitude, longitude, floor area and intended use of buildings. 
-~40s
+-a, --adressen  
+Export all address data including year of construction, latitude, longitude, floor area and intended use of buildings.
+~40s. The old name `--all` still works.
 
 -h, --help  
-show the help information message
+Show the help information message
 
 -o, --openbare-ruimten  
 Export all active openbare ruimten (streets etc.), including those without addresses. Includes woonplaats, gemeente and provincie. ~1s

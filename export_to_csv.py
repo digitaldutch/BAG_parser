@@ -6,9 +6,9 @@ from exporter import Exporter
 
 parser = ArgumentParser(description='Export addresses in SQLite database to a *.csv file')
 
-helpText = ("Export all data including year of construction, latitude, longitude, floor area and intended use of "
-            "buildings")
-parser.add_argument('-a', '--all', action='store_true', help=helpText)
+helpText = ("Export all address data, including year of construction, latitude, longitude, floor area and intended use of "
+            "buildings. The old name --all still works.")
+parser.add_argument('-a', '--adressen', '--all', action='store_true', dest='adressen', help=helpText)
 
 helpText = "Export all active openbare ruimten (streets etc.), including those without addresses"
 parser.add_argument('-o', '--openbare-ruimten', action='store_true', help=helpText)
@@ -31,7 +31,7 @@ utils.print_log(f"Python version {platform.python_version()}")
 
 csv_exporter = Exporter()
 
-if args.all:
+if args.adressen:
     csv_exporter.export_to_csv('output/adressen_all_data.csv')
 elif args.openbare_ruimten:
     csv_exporter.export_to_csv_openbare_ruimten('output/openbare_ruimten.csv')
