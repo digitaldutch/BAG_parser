@@ -2,7 +2,7 @@ nl_nsgi_rdtrans2018.tif
 =======================
 
 Correction grid of the official Dutch coordinate transformation RDNAPTRANS2018 (Rijksdriehoekscoordinaten, RD ->
-ETRS89). The BAG parser uses it, through the PROJ library (pyproj), to convert RD coordinates to latitude and
+ETRS89). The BAG parser uses it, through the PROJ library (pyproj), to convert RD coordinates to ETRS89 latitude and
 longitude with very high accuracy.
 
 Source:   NSGI (Nederlandse Samenwerking Geodetische Infrastructuur), https://www.nsgi.nl/rdnaptrans

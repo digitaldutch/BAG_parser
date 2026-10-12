@@ -1,14 +1,25 @@
 import importlib.util
 import locale
 
-version = 107
+version = 108
 version_date = '12 October 2026'
 
-# At startup the parser checks if a newer version is available on GitHub and shows a message if there is.
-# This makes one web request to GitHub. If GitHub can't be reached the check is skipped silently.
-# Set to False to disable. If you use a fork, change the URL to the config.py of your fork.
+# At startup the parser checks if a newer version is available on GitHub.
 check_for_updates = True
+
+# Change this url if you use a fork.
 update_check_url = 'https://raw.githubusercontent.com/digitaldutch/BAG_parser/master/config.py'
+
+# Coordinate system of the latitude and longitude fields (and the geometry):
+# 'ETRS89' (default): The European standard that the Rijksdriehoekscoordinaten are tied to. These coordinates never change.
+#                     They can be used as WGS84, see the Coordinates section in README.md.
+# 'WGS84':            Exact WGS84 coordinates for the epoch below. ETRS89 and WGS84 are about 0.9 meter apart in the
+#                     Netherlands and the difference grows about 2.4 cm per year, so WGS84 coordinates depend on the epoch.
+coordinate_system = 'ETRS89'
+
+# Epoch (date) for the WGS84 coordinates, if coordinate_system is 'WGS84'. Use a decimal year (2026.5) or a date ('2026-06-30').
+# None means today (the date of the import). The epoch is shown in the log and saved in the bag_info table.
+wgs84_epoch = None
 
 # Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.
 try:

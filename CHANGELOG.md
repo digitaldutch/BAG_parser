@@ -1,5 +1,11 @@
 # Changelog
 
+## V108 - 12 October 2026
+* New option `coordinate_system` in config.py: `'ETRS89'` (default, as before) or `'WGS84'` for exact WGS84 coordinates with a
+  time-dependent transformation. With `wgs84_epoch` you choose the epoch (date), by default the date of the import.
+* The coordinate system and the epoch are shown in the log at the start of the import and saved in the new `bag_info` table
+  of the database, together with the parser version and the import date. The database tests use this table.
+
 ## V107 - 12 October 2026
 * New script validate_coordinates_with_pdok.py: compares the RD coordinates of addresses in the SQLite database with the BAG API
   of PDOK. This checks if the parser reads the correct positions from the BAG. Needs internet access, not pyproj.

@@ -1,14 +1,18 @@
-# Conversion of Rijksdriehoekscoordinaten (RD, EPSG:28992) to latitude and longitude in ETRS89 (EPSG:4258).
+# Conversion of Rijksdriehoekscoordinaten (RD, EPSG:28992) to latitude and longitude.
 #
-# The conversion uses the official transformation RDNAPTRANS2018 of NSGI, using the PROJ library (pyproj) and the
-# correction grid in the 'proj' folder. This is accurate to a few centimeters.
+# Step 1: RD to ETRS89 (EPSG:4258) with the official transformation RDNAPTRANS2018 of NSGI, using the PROJ library (pyproj)
+# and the correction grid in the 'proj' folder. This is accurate to a fraction of a millimeter.
 #
-# ETRS89 is the European reference system that RD is tied to. The latitude and longitude are used as WGS84 without a
-# further transformation. The difference between ETRS89 and WGS84 is about 88 cm (1 January 2025) and grows about
-# 2.4 cm per year. See Limitations and notes in README.md.
+# Step 2, only if coordinate_system = 'WGS84' in config.py: ETRS89 to WGS84 with a time-dependent transformation for an
+# epoch (date). ETRS89 is fixed to the Eurasian plate and WGS84 to the globe. The difference is about 88 cm
+# (1 January 2025) and grows about 2.4 cm per year. By default step 2 is skipped and the ETRS89 latitude and longitude
+# are used as WGS84, as PDOK does. See the Coordinates section in README.md.
 
 import math
 import os
+from datetime import datetime
+
+import config
 
 try:
     import pyproj
@@ -37,7 +41,15 @@ REFERENCE_POINTS = [
 ]
 MAX_ERROR_METERS = 0.01
 
+ETRS89 = 'ETRS89'
+WGS84 = 'WGS84'
+# The epoch is stored in an environment variable, so that all (multiprocessing) processes use the same epoch
+EPOCH_ENVIRONMENT_VARIABLE = 'BAG_PARSER_WGS84_EPOCH'
+# Yearly growth of the difference between ETRS89 and WGS84 in meters. Used to check the transformation.
+WGS84_SHIFT_PER_YEAR = 0.0245
+
 _transformer = None
+_wgs84_transformer = None
 
 
 def _get_transformer():
@@ -49,9 +61,81 @@ def _get_transformer():
     return _transformer
 
 
-def rd_to_wgs84(x, y):
-    """Convert RD coordinates to latitude and longitude (ETRS89, used as WGS84). Returns (latitude, longitude)."""
+def _get_wgs84_transformer():
+    global _wgs84_transformer
+    if _wgs84_transformer is None:
+        # Time-dependent transformation from ETRF2000 (ETRS89) to WGS 84 (G2139)
+        _wgs84_transformer = pyproj.Transformer.from_crs('EPSG:9067', 'EPSG:9057', always_xy=True)
+    return _wgs84_transformer
+
+
+def decimal_year(moment):
+    """Decimal year of a date and time. For example 2026.5 is about 1 July 2026."""
+    year_start = datetime(moment.year, 1, 1)
+    next_year_start = datetime(moment.year + 1, 1, 1)
+    return moment.year + (moment - year_start) / (next_year_start - year_start)
+
+
+def epoch_to_date(epoch):
+    year = int(epoch)
+    year_start = datetime(year, 1, 1)
+    next_year_start = datetime(year + 1, 1, 1)
+    return (year_start + (next_year_start - year_start) * (epoch - year)).date()
+
+
+def parse_epoch(value):
+    """Epoch as decimal year. Accepts a number (2026.5) or a date as text ('2026-06-30')."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    try:
+        return float(text)
+    except ValueError:
+        return decimal_year(datetime.strptime(text, '%Y-%m-%d'))
+
+
+def get_coordinate_system():
+    return str(config.coordinate_system).strip().upper()
+
+
+def get_epoch():
+    """Epoch (decimal year) of the WGS84 coordinates. Today if wgs84_epoch is None in config.py."""
+    if config.wgs84_epoch is not None:
+        return parse_epoch(config.wgs84_epoch)
+
+    value = os.environ.get(EPOCH_ENVIRONMENT_VARIABLE)
+    if value is None:
+        value = f"{decimal_year(datetime.now()):.3f}"
+        os.environ[EPOCH_ENVIRONMENT_VARIABLE] = value
+    return float(value)
+
+
+def describe(coordinate_system=None, epoch=None):
+    """Text for the log that tells which coordinate system is used."""
+    coordinate_system = coordinate_system or get_coordinate_system()
+    if coordinate_system == WGS84:
+        epoch = epoch if epoch is not None else get_epoch()
+        return f"WGS84 for epoch {epoch:.3f} ({epoch_to_date(epoch)})"
+    return "ETRS89 (EPSG:4258), used as WGS84"
+
+
+def rd_to_etrs89(x, y):
+    """Convert RD coordinates to latitude and longitude in ETRS89. Returns (latitude, longitude)."""
     lon, lat = _get_transformer().transform(x, y)
+    return lat, lon
+
+
+def rd_to_wgs84(x, y, coordinate_system=None, epoch=None):
+    """Convert RD coordinates to latitude and longitude. Returns (latitude, longitude).
+    This is ETRS89 (used as WGS84), or real WGS84 for an epoch if coordinate_system is 'WGS84' in config.py."""
+    lat, lon = rd_to_etrs89(x, y)
+
+    coordinate_system = coordinate_system or get_coordinate_system()
+    if coordinate_system == WGS84:
+        epoch = epoch if epoch is not None else get_epoch()
+        # The height is not known. It has hardly any effect on the latitude and longitude.
+        lon, lat, _, _ = _get_wgs84_transformer().transform(lon, lat, 0.0, epoch)
+
     return lat, lon
 
 
@@ -71,9 +155,21 @@ def check_requirements():
                 "Restore it with: git checkout proj/nl_nsgi_rdtrans2018.tif "
                 "or download the BAG parser again from https://github.com/digitaldutch/BAG_parser"]
 
+    coordinate_system = get_coordinate_system()
+    if coordinate_system not in (ETRS89, WGS84):
+        return [f"config.py: coordinate_system must be 'ETRS89' or 'WGS84', not '{config.coordinate_system}'."]
+
+    epoch = None
+    if coordinate_system == WGS84:
+        try:
+            epoch = get_epoch()
+        except ValueError:
+            return [f"config.py: wgs84_epoch must be None, a year like 2026.5 or a date like '2026-06-30', "
+                    f"not '{config.wgs84_epoch}'."]
+
     try:
         for x, y, lat_expected, lon_expected in REFERENCE_POINTS:
-            lat, lon = rd_to_wgs84(x, y)
+            lat, lon = rd_to_etrs89(x, y)
             error_meters = distance_meters(lat, lon, lat_expected, lon_expected)
             if error_meters > MAX_ERROR_METERS:
                 return [f"The test conversion of RD {x}, {y} to latitude and longitude is off by {error_meters:.2f} meter. "
@@ -81,6 +177,17 @@ def check_requirements():
                         "coordinates. Check the pyproj installation (pip install --upgrade pyproj). "
                         "It is also possible that the reference points in bag/coordinates.py are outdated. "
                         "Run validate_coordinates.py to check this."]
+
+        if coordinate_system == WGS84:
+            x, y = REFERENCE_POINTS[0][:2]
+            lat, lon = rd_to_etrs89(x, y)
+            lat_wgs, lon_wgs = rd_to_wgs84(x, y, WGS84, epoch)
+            shift = distance_meters(lat_wgs, lon_wgs, lat, lon)
+            expected_shift = WGS84_SHIFT_PER_YEAR * (epoch - 1989)
+            if abs(shift - expected_shift) > 0.15:
+                return [f"The ETRS89 to WGS84 transformation for epoch {epoch:.3f} gives a shift of {shift:.2f} meter. "
+                        f"About {expected_shift:.2f} meter is expected. Check the pyproj installation "
+                        "(pip install --upgrade pyproj)."]
     except Exception as e:
         return [f"The test conversion of RD to latitude and longitude failed: {e}"]
 

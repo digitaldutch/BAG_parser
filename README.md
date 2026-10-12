@@ -218,12 +218,25 @@ and you can use them as WGS84 (the system of GPS, OpenStreetMap and Google Maps)
 * ETRS89 is fixed to the Eurasian plate. WGS84 is fixed to the globe. They were equal in 1989. The difference in the
   Netherlands was about 88 cm on 1 January 2025 and grows about 2.4 cm per year. The ETRS89 coordinates of a point stay
   the same, the WGS84 coordinates of that point slowly change.
-* The parser uses the ETRS89 latitude and longitude as WGS84, without a further transformation. The
+* By default the parser uses the ETRS89 latitude and longitude as WGS84, without a further transformation. The
   [Geonovum guideline](https://docs.geostandaarden.nl/crs/crs/) (section 3.3.2.2.1) describes this as treating WGS 84 as
   equal to ETRS89. It is suited for data from RD that is used for visualisation or combined with other data. PDOK, the
   open data platform of the Kadaster, also serves its ETRS89 and WGS84 coordinates as the same values.
 * This is negligible for maps and apps. If you need exact WGS84 coordinates for a specific date, you have to apply a
   time-dependent transformation yourself.
+
+### Options
+* `coordinate_system` in [config.py](config.py): `'ETRS89'` (default) or `'WGS84'`.
+* `'WGS84'` gives exact WGS84 latitude and longitude, using a time-dependent transformation from ETRS89 for an epoch (a
+  date). The coordinates are about 0.9 meter different from the ETRS89 ones (in 2026) and depend on the epoch.
+* `wgs84_epoch` in [config.py](config.py): the epoch as a decimal year (`2026.5`) or a date (`'2026-06-30'`). The default
+  `None` means today, the date of the import. Use a fixed epoch if you want the same coordinates every time.
+* The parser shows the coordinate system and the epoch in the log, for example
+  `coordinates: WGS84 for epoch 2026.784 (2026-10-12)`. It also saves them in the `bag_info` table of the database
+  (`coordinate_system` and `wgs84_epoch`), together with the version of the parser and the date of the import.
+  The database tests use this table.
+* The Firebird updater and other users of the database get the coordinates of the chosen system. Do not mix databases with
+  different epochs if centimeters matter.
 
 ### Checks
 * At startup the parser checks the conversion with 10 official GNSS stations. It stops with a clear message if something

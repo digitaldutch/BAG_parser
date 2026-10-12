@@ -197,7 +197,12 @@ class DatabaseSqlite:
         )
 
     def create_bag_tables(self):
-        self.connection.executescript("""           
+        self.connection.executescript("""
+            DROP TABLE IF EXISTS bag_info;
+            CREATE TABLE bag_info (
+                name TEXT PRIMARY KEY,
+                value TEXT);
+
             DROP TABLE IF EXISTS provincies;
             CREATE TABLE provincies (
                 id INTEGER PRIMARY KEY, 
@@ -651,6 +656,16 @@ class DatabaseSqlite:
 
         self.connection.commit()
 
+    def save_bag_info(self, info):
+        self.connection.executemany("REPLACE INTO bag_info (name, value) VALUES (?, ?);", list(info.items()))
+        self.connection.commit()
+
+    def get_bag_info(self):
+        # Databases of older versions have no bag_info table
+        if not self.table_exists('bag_info'):
+            return {}
+        return dict(self.fetchall("SELECT name, value FROM bag_info;"))
+
     def table_exists(self, table_name):
         # Check if the database contains adressen tabel
         count = self.fetchone(f"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table_name}';")
@@ -747,6 +762,10 @@ class DatabaseSqlite:
         # De opgeslagen latitude en longitude moeten overeenkomen met de officiele RDNAPTRANS2018 conversie van rd_x en
         # rd_y. Dit controleert een steekproef. Een database van een oudere versie (benaderingsformules) wijkt ~0.3 m af.
         from bag import coordinates
+        info = self.get_bag_info()
+        coordinate_system = info.get('coordinate_system', coordinates.ETRS89)
+        epoch = float(info['wgs84_epoch']) if info.get('wgs84_epoch') else None
+        utils.print_log(f"info: coordinatenstelsel: {coordinates.describe(coordinate_system, epoch)}")
         if coordinates.pyproj is None:
             utils.print_log_warning("test: opgeslagen coordinaten niet gecontroleerd: pyproj is niet geinstalleerd")
         else:
@@ -755,7 +774,7 @@ class DatabaseSqlite:
             wrong_count = 0
             max_error = 0.0
             for rd_x, rd_y, latitude, longitude in rows:
-                lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y)
+                lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y, coordinate_system, epoch)
                 error = coordinates.distance_meters(lat, lon, latitude, longitude)
                 max_error = max(max_error, error)
                 if error > coordinates.MAX_ERROR_METERS: wrong_count += 1

@@ -2,6 +2,7 @@ import os
 import sys
 import platform
 import time
+from datetime import datetime
 
 import utils
 import config
@@ -42,6 +43,11 @@ def main():
             utils.print_log_error(error)
         sys.exit('Fix the error above and run the BAG parser again. See the Installation section in README.md')
 
+    # Coordinates. In WGS84 mode this also fixes the epoch for all processes.
+    utils.print_log(f"coordinates: {coordinates.describe()}")
+    if coordinates.get_coordinate_system() == coordinates.WGS84:
+        utils.print_log("The WGS84 coordinates depend on this epoch. It is saved in the bag_info table of the database.")
+
     # Optional packages
     utils.print_log(f"using {config.cpu_cores_used} CPU cores")
     if not config.has_psutil:
@@ -68,6 +74,12 @@ def main():
 
     utils.print_log("create BAG SQLite database structure")
     db_sqlite.create_bag_tables()
+    db_sqlite.save_bag_info({
+        'parser_version': str(config.version),
+        'import_date': datetime.now().strftime('%Y-%m-%d'),
+        'coordinate_system': coordinates.get_coordinate_system(),
+        'wgs84_epoch': f"{coordinates.get_epoch():.3f}" if coordinates.get_coordinate_system() == coordinates.WGS84 else '',
+    })
 
     # parse gemeenten csv
     g_parser = GemeentenParser(db_sqlite)

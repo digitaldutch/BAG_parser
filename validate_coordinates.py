@@ -97,7 +97,7 @@ if not stations:
 
 errors = []
 for s in stations:
-    lat, lon = coordinates.rd_to_wgs84(s['x'], s['y'])
+    lat, lon = coordinates.rd_to_etrs89(s['x'], s['y'])
     errors.append((coordinates.distance_meters(lat, lon, s['lat'], s['lon']), s))
 
 values = [e for e, s in errors]
