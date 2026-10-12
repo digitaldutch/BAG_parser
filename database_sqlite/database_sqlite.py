@@ -4,6 +4,11 @@ import utils
 import config
 
 
+def none_if_empty(value):
+    """The BAG parser uses an empty string for missing values. Save them as NULL."""
+    return None if value == '' else value
+
+
 class DatabaseSqlite:
     connection = None
     cursor = None
@@ -143,8 +148,8 @@ class DatabaseSqlite:
             status, begindatum_geldigheid, einddatum_geldigheid)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
-            (data["id"], data["nummer_id"], data["oppervlakte"], data["rd_x"], data["rd_y"],
-             data["latitude"], data["longitude"], data["status"],
+            (data["id"], data["nummer_id"], data["oppervlakte"], none_if_empty(data["rd_x"]), none_if_empty(data["rd_y"]),
+             none_if_empty(data["latitude"]), none_if_empty(data["longitude"]), data["status"],
              data["begindatum_geldigheid"], data["einddatum_geldigheid"])
         )
 
@@ -174,7 +179,8 @@ class DatabaseSqlite:
                 begindatum_geldigheid, einddatum_geldigheid)
                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
+            (data["id"], data["nummer_id"], none_if_empty(data["rd_x"]), none_if_empty(data["rd_y"]),
+             none_if_empty(data["latitude"]), none_if_empty(data["longitude"]),
              data["geometry"], data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"])
         )
 
@@ -185,7 +191,8 @@ class DatabaseSqlite:
                 begindatum_geldigheid, einddatum_geldigheid)
                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (data["id"], data["nummer_id"], data["rd_x"], data["rd_y"], data["latitude"], data["longitude"],
+            (data["id"], data["nummer_id"], none_if_empty(data["rd_x"]), none_if_empty(data["rd_y"]),
+             none_if_empty(data["latitude"]), none_if_empty(data["longitude"]),
              data["geometry"], data["status"], data["begindatum_geldigheid"], data["einddatum_geldigheid"])
         )
 

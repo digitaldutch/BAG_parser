@@ -1,5 +1,10 @@
 # Changelog
 
+## V104 - 12 October 2026
+* Fixed: Verblijfsobjecten with a polygon geometry instead of a point had no coordinates (about 800 addresses).
+  The location is now the centroid of the polygon.
+* Fixed: Missing coordinates (rd_x, rd_y, latitude, longitude) are now NULL, not an empty text.
+
 ## V103 - 12 October 2026
 * The parser now checks at startup if a newer version is available on GitHub and logs the result: a warning if there
   is a newer version, or a message that you are using the latest version.

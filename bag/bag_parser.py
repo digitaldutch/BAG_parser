@@ -88,6 +88,11 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             else:
                 field_found = False
 
+                # A verblijfsobject can have a polygon (vlak) instead of a point. Use the centroid of the exterior ring
+                # (the first posList) as its location.
+                if coordinates_field == 'pos' and not data['pos'] and elem.tag.endswith('}posList'):
+                    data['pos'] = ring_centroid(elem.text or '', elem.get('count'))
+
                 if db_tag_parent_fields and parent_tags:
                     parent_elem_tag = parent_tags[-1] + elem.tag
                     field_parent_elem = db_tag_parent_fields.get(parent_elem_tag)
@@ -128,6 +133,42 @@ def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db
             db_rows = geometry_to_empty(db_rows)
 
     return db_rows
+
+
+def ring_centroid(pos_list, count):
+    """Centroid of a polygon ring from a GML posList. Returns 'x y' or '' if there are no coordinates.
+    The dimension (2D or 3D) is calculated with the count attribute (the number of points)."""
+    values = [float(v) for v in pos_list.split()]
+    if not values:
+        return ''
+
+    if count and int(count) > 0:
+        dimension = len(values) // int(count)
+    else:
+        dimension = 3 if len(values) % 3 == 0 else 2
+
+    # Relative to the first point to keep the calculation precise
+    x0, y0 = values[0], values[1]
+    points = [(values[i] - x0, values[i + 1] - y0) for i in range(0, len(values) - dimension + 1, dimension)]
+
+    area2 = 0.0
+    cx = 0.0
+    cy = 0.0
+    for (xa, ya), (xb, yb) in zip(points, points[1:] + points[:1]):
+        cross = xa * yb - xb * ya
+        area2 += cross
+        cx += (xa + xb) * cross
+        cy += (ya + yb) * cross
+
+    if abs(area2) < 1e-9:
+        # Degenerate polygon: use the average of the points
+        cx = sum(x for x, y in points) / len(points)
+        cy = sum(y for x, y in points) / len(points)
+    else:
+        cx /= 3 * area2
+        cy /= 3 * area2
+
+    return f"{x0 + cx:.3f} {y0 + cy:.3f}"
 
 
 def geometry_to_wgs84(rows, is_3d):
