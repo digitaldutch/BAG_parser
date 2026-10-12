@@ -1,5 +1,8 @@
 # Changelog
 
+## V113 - 12 October 2026
+* Readme updates.
+
 ## V112 - 12 October 2026
 * The parser works without any package. If `pyproj` is not installed it uses the old approximation equations (restored as
   bag/rijksdriehoek.py) with a constant correction of about 21 cm north and 18 cm east. That is accurate to about 7 cm on average

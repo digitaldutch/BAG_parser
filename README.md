@@ -48,9 +48,10 @@ There are several settings you can tweak in the [config.py](config.py).
   (see `cpu_cores_used` in [config.py](config.py)).
 
 ## Installation
-You only have to do this once. Steps 3 to 5 are optional. Step 5 installs `pyproj`, which gives the most accurate coordinates, see [Requirements](#requirements).
+You only have to do this once. This parser runs without additional packages. Steps 3 to 5 are optional install `pyproj`, 
+which is not needed but provides the most accurate coordinates, see [Requirements](#requirements).
 1. Install [Python](https://www.python.org/downloads/) 3.11 or newer.
-2. Download the BAG parser. Using git is recommended, because updates are easier:
+2. Download the BAG parser. Using git is recommended as updates are easier:
    ```
    git clone https://github.com/digitaldutch/BAG_parser
    ```
@@ -73,10 +74,10 @@ You only have to do this once. Steps 3 to 5 are optional. Step 5 installs `pypro
    ```
 
 ## Running the parser
-Do this each time you want a new SQLite database, for example when there is a new BAG release.
+Do this each time you want a new SQLite database, for example, when there is a new BAG release.
 1. Open a terminal in the BAG parser folder and activate the virtual environment (see Installation, step 4).
    You have to do this in every new terminal. PyCharm and other editors do this automatically.
-2. Optional: update the BAG parser to the latest version, and install new requirements if there are any.
+2. Optional: update the BAG parser to the latest version and install new requirements if there are any.
    The parser tells you at startup if a newer version is available. It checks this with one web request to GitHub.
    Set `check_for_updates = False` in [config.py](config.py) to turn this off.
    ```
@@ -124,12 +125,11 @@ WHERE postcode = '2514GL'
 ```
 * When done parsing, use [export_to_csv.py](export_to_csv.py) to create a *.csv file. This file has several command line options (see below). 
 These conversion functions are easy to customize. 
-I myself use one (not on GitHub) to pump the SQLite data into a live Firebird database.
 
 ## Python commands ##
 
 ### [import_bag.py](import_bag.py)
-Parses the original BAG file and transforms it into an SQLite database. Takes about 6 minutes to complete
+Parses the original BAG file and transforms it into an SQLite database. Takes about 7 minutes to complete
 on an AMD 9900X PC, or a few minutes more if you switch on the `parse_geometries` option in the [config.py](config.py).
 
 ### [export_to_csv.py](export_to_csv.py)
