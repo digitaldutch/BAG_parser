@@ -4,7 +4,8 @@ Guidance for AI coding agents working on this repository.
 
 ## Project
 Python (3.11 or newer) utility that parses the Dutch BAG (Basisregistratie Adressen en Gebouwen) XML extract from Kadaster into a
-SQLite database, and exports it to CSV. Only `pyproj` is a required dependency (RD to latitude/longitude conversion); `psutil` is optional. Do not add other dependencies
+SQLite database, and exports it to CSV. `pyproj` (accurate RD to latitude/longitude conversion) and `psutil` (CPU cores) are optional: without them the parser uses
+approximation equations and `os.cpu_count()`. Do not add other dependencies
 without asking. See [README.md](README.md).
 
 ## Layout
@@ -14,7 +15,7 @@ without asking. See [README.md](README.md).
 * `validate_coordinates.py` - validates the RD to latitude/longitude conversion against official Kadaster GNSS stations (RDinfo).
 * `validate_coordinates_with_pdok.py` - compares RD positions of addresses in the database with the PDOK BAG API.
 * `config.py` - user options, plus `version` and `version_date`.
-* `bag/` - XML parsers (`bag_parser.py`, `gemeente_parser.py`) and RD to latitude/longitude conversion (`coordinates.py`, uses pyproj).
+* `bag/` - XML parsers (`bag_parser.py`, `gemeente_parser.py`) and RD to latitude/longitude conversion (`coordinates.py`, uses pyproj, or `rijksdriehoek.py` if pyproj is missing).
 * `proj/` - the RDNAPTRANS2018 grid file (CC BY 4.0, see `proj/README.txt`) that makes the conversion accurate. Do not remove it.
 * `database_sqlite/`, `exporter/`, `statusbar/` - database, CSV export and progress bar.
 * `utils.py`, `logger.py` - shared helpers and logging (use `utils.print_log`).

@@ -36,15 +36,19 @@ def main():
     else:
         utils.print_log("Version check: turned off (check_for_updates in config.py)")
 
-    # Required packages
+    # Check the settings and the coordinate conversion
     errors = coordinates.check_requirements()
     if errors:
         for error in errors:
             utils.print_log_error(error)
         sys.exit('Fix the error above and run the BAG parser again. See the Installation section in README.md')
 
+    for warning in coordinates.get_warnings():
+        utils.print_log_warning(warning)
+
     # Coordinates. In WGS84 mode this also fixes the epoch for all processes.
     utils.print_log(f"coordinates: {coordinates.describe()}")
+    utils.print_log(f"coordinate conversion: {coordinates.describe_method()}")
     if coordinates.get_coordinate_system() == coordinates.WGS84:
         utils.print_log("The WGS84 coordinates depend on this epoch. It is saved in the bag_info table of the database.")
 
@@ -79,6 +83,7 @@ def main():
         'parser_version': str(config.version),
         'import_date': datetime.now().strftime('%Y-%m-%d'),
         'coordinate_system': coordinates.get_coordinate_system(),
+        'coordinate_method': coordinates.get_method(),
         'wgs84_epoch': f"{coordinates.get_epoch():.3f}" if coordinates.get_coordinate_system() == coordinates.WGS84 else '',
     })
 

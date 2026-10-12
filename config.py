@@ -2,7 +2,7 @@ import importlib.util
 import locale
 import os
 
-version = 111
+version = 112
 version_date = '12 October 2026'
 
 # At startup the parser checks if a newer version is available on GitHub.

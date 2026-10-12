@@ -1,18 +1,22 @@
 # Conversion of Rijksdriehoekscoordinaten (RD, EPSG:28992) to latitude and longitude.
 #
-# Step 1: RD to ETRS89 (EPSG:4258) with the official transformation RDNAPTRANS2018 of NSGI, using the PROJ library (pyproj)
-# and the correction grid in the 'proj' folder. This is accurate to a fraction of a millimeter.
+# Step 1: RD to ETRS89 (EPSG:4258).
+# * With pyproj (recommended): the official transformation RDNAPTRANS2018 of NSGI, using the PROJ library and the correction
+#   grid in the 'proj' folder. This is accurate to a fraction of a millimeter.
+# * Without pyproj: approximation equations (bag/rijksdriehoek.py) with a constant correction. This is accurate to about
+#   7 cm on average and 25 cm at most.
 #
-# Step 2, only if coordinate_system = 'WGS84' in config.py: ETRS89 to WGS84 with a time-dependent transformation for an
-# epoch (date). ETRS89 is fixed to the Eurasian plate and WGS84 to the globe. The difference is about 88 cm
-# (1 January 2025) and grows about 2.4 cm per year. By default step 2 is skipped and the ETRS89 latitude and longitude
-# are used as WGS84, as PDOK does. See the Coordinates section in README.md.
+# Step 2, only if coordinate_system = 'WGS84' in config.py (needs pyproj): ETRS89 to WGS84 with a time-dependent
+# transformation for an epoch (date). ETRS89 is fixed to the Eurasian plate and WGS84 to the globe. The difference is
+# about 88 cm (1 January 2025) and grows about 2.4 cm per year. By default step 2 is skipped and the ETRS89 latitude and
+# longitude are used as WGS84, as PDOK does. See the Coordinates section in README.md.
 
 import math
 import os
 from datetime import datetime
 
 import config
+from bag import rijksdriehoek
 
 try:
     import pyproj
@@ -47,6 +51,16 @@ WGS84 = 'WGS84'
 EPOCH_ENVIRONMENT_VARIABLE = 'BAG_PARSER_WGS84_EPOCH'
 # Yearly growth of the difference between ETRS89 and WGS84 in meters. Used to check the transformation.
 WGS84_SHIFT_PER_YEAR = 0.0245
+
+# Conversion methods
+RDNAPTRANS = 'RDNAPTRANS2018'
+APPROXIMATION = 'approximation'
+# The approximation equations are about 28 cm off. This constant correction (in degrees, about 21 cm north and 18 cm east)
+# makes them accurate to about 7 cm on average and 23 cm at most. It is the median difference between the equations and
+# the 442 official GNSS stations of the Kadaster (RDinfo).
+APPROXIMATION_CORRECTION_LAT = -0.000001890
+APPROXIMATION_CORRECTION_LON = -0.000002687
+APPROXIMATION_MAX_ERROR_METERS = 0.30
 
 _transformer = None
 _wgs84_transformer = None
@@ -119,19 +133,37 @@ def describe(coordinate_system=None, epoch=None):
     return "ETRS89 (EPSG:4258)"
 
 
-def rd_to_etrs89(x, y):
+def get_method():
+    """The conversion method that is used: RDNAPTRANS2018 with pyproj, or the approximation equations without pyproj."""
+    return RDNAPTRANS if pyproj is not None else APPROXIMATION
+
+
+def describe_method(method=None):
+    """Text for the log that tells how the RD coordinates are converted."""
+    if (method or get_method()) == APPROXIMATION:
+        return "approximation equations (accurate to about 7 cm on average, 25 cm at most)"
+    return "RDNAPTRANS2018 with pyproj"
+
+
+def rd_to_etrs89(x, y, method=None):
     """Convert RD coordinates to latitude and longitude in ETRS89. Returns (latitude, longitude)."""
+    if (method or get_method()) == APPROXIMATION:
+        lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(x, y)
+        return lat + APPROXIMATION_CORRECTION_LAT, lon + APPROXIMATION_CORRECTION_LON
+
     lon, lat = _get_transformer().transform(x, y)
     return lat, lon
 
 
-def rd_to_wgs84(x, y, coordinate_system=None, epoch=None):
+def rd_to_wgs84(x, y, coordinate_system=None, epoch=None, method=None):
     """Convert RD coordinates to latitude and longitude. Returns (latitude, longitude).
     This is ETRS89 (used as WGS84), or real WGS84 for an epoch if coordinate_system is 'WGS84' in config.py."""
-    lat, lon = rd_to_etrs89(x, y)
+    lat, lon = rd_to_etrs89(x, y, method)
 
     coordinate_system = coordinate_system or get_coordinate_system()
     if coordinate_system == WGS84:
+        if pyproj is None:
+            raise RuntimeError("The WGS84 coordinates need the package 'pyproj'")
         epoch = epoch if epoch is not None else get_epoch()
         # The height is not known. It has hardly any effect on the latitude and longitude.
         lon, lat, _, _ = _get_wgs84_transformer().transform(lon, lat, 0.0, epoch)
@@ -144,20 +176,51 @@ def distance_meters(lat1, lon1, lat2, lon2):
     return math.hypot((lat1 - lat2) * 111_200, (lon1 - lon2) * 111_200 * math.cos(math.radians(lat2)))
 
 
+def get_warnings():
+    """Warnings for the log. The parser works, but not with the best settings."""
+    if pyproj is None:
+        return ["The recommended package 'pyproj' is not installed. The approximation equations are used for the coordinates. "
+                "They are accurate to about 7 cm on average and 25 cm at most. Install pyproj for the official "
+                "transformation, which is accurate to a fraction of a millimeter: pip install -r requirements.txt"]
+    return []
+
+
+def _check_reference_points(method, max_error_meters):
+    for x, y, lat_expected, lon_expected in REFERENCE_POINTS:
+        lat, lon = rd_to_etrs89(x, y, method)
+        error_meters = distance_meters(lat, lon, lat_expected, lon_expected)
+        if error_meters > max_error_meters:
+            if method == APPROXIMATION:
+                return [f"The test conversion of RD {x}, {y} to latitude and longitude with the approximation equations is off "
+                        f"by {error_meters:.2f} meter. Expected is at most {max_error_meters:.2f} meter. "
+                        "Check bag/rijksdriehoek.py and the correction in bag/coordinates.py."]
+            return [f"The test conversion of RD {x}, {y} to latitude and longitude is off by {error_meters:.2f} meter. "
+                    "Probably PROJ did not use the grid file in the 'proj' folder, which is needed for accurate "
+                    "coordinates. Check the pyproj installation (pip install --upgrade pyproj). "
+                    "It is also possible that the reference points in bag/coordinates.py are outdated. "
+                    "Run validate_coordinates.py to check this."]
+    return []
+
+
 def check_requirements():
     """Check if the coordinate conversion works. Returns a list with error messages. Empty if everything is OK."""
+    coordinate_system = get_coordinate_system()
+    if coordinate_system not in (ETRS89, WGS84):
+        return [f"config.py: coordinate_system must be 'ETRS89' or 'WGS84', not '{config.coordinate_system}'."]
+
     if pyproj is None:
-        return ["The required package 'pyproj' is not installed. It converts the BAG coordinates "
-                "(Rijksdriehoekscoordinaten) to latitude and longitude. Install it with: pip install -r requirements.txt"]
+        if coordinate_system == WGS84:
+            return ["config.py: coordinate_system = 'WGS84' needs the package 'pyproj'. Install it with: "
+                    "pip install -r requirements.txt, or use coordinate_system = 'ETRS89'."]
+        try:
+            return _check_reference_points(APPROXIMATION, APPROXIMATION_MAX_ERROR_METERS)
+        except Exception as e:
+            return [f"The test conversion of RD to latitude and longitude failed: {e}"]
 
     if not os.path.isfile(GRID_FILE):
         return [f"The coordinate transformation grid file '{GRID_FILE}' is missing. It is part of the BAG parser. "
                 "Restore it with: git checkout proj/nl_nsgi_rdtrans2018.tif "
                 "or download the BAG parser again from https://github.com/digitaldutch/BAG_parser"]
-
-    coordinate_system = get_coordinate_system()
-    if coordinate_system not in (ETRS89, WGS84):
-        return [f"config.py: coordinate_system must be 'ETRS89' or 'WGS84', not '{config.coordinate_system}'."]
 
     epoch = None
     if coordinate_system == WGS84:
@@ -168,15 +231,9 @@ def check_requirements():
                     f"not '{config.wgs84_epoch}'."]
 
     try:
-        for x, y, lat_expected, lon_expected in REFERENCE_POINTS:
-            lat, lon = rd_to_etrs89(x, y)
-            error_meters = distance_meters(lat, lon, lat_expected, lon_expected)
-            if error_meters > MAX_ERROR_METERS:
-                return [f"The test conversion of RD {x}, {y} to latitude and longitude is off by {error_meters:.2f} meter. "
-                        "Probably PROJ did not use the grid file in the 'proj' folder, which is needed for accurate "
-                        "coordinates. Check the pyproj installation (pip install --upgrade pyproj). "
-                        "It is also possible that the reference points in bag/coordinates.py are outdated. "
-                        "Run validate_coordinates.py to check this."]
+        errors = _check_reference_points(RDNAPTRANS, MAX_ERROR_METERS)
+        if errors:
+            return errors
 
         if coordinate_system == WGS84:
             x, y = REFERENCE_POINTS[0][:2]

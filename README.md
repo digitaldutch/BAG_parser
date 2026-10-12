@@ -6,7 +6,7 @@
 ## TL;DR
 Converts in a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
 en Gebouwen) into a user-friendly, file-based, blazingly fast SQLite database by running a single Python script. 
-No database server needed. Only Python and one small package ([pyproj](https://pyproj4.github.io/pyproj/)) are required.
+No database server needed. You only need Python. The package [pyproj](https://pyproj4.github.io/pyproj/) is recommended for the most accurate coordinates.
 
 Another oneliner script will convert this SQLite database to CSV in 15 seconds. 
 
@@ -27,24 +27,28 @@ expect named
 ## What this parser does
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
-to latitude and longitude coordinates: ETRS89 (the European standard, which you can use as WGS84) or, if you choose, exact WGS84 (see [Coordinates](#coordinates)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
-Construction year, floor area and intended use of buildings are also provided. 
-Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
-table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
-databases. There are a couple of options available in the [config.py](config.py).
+to latitude and longitude coordinates: ETRS89 (the European standard). It is close (less than 1 m, see [Coordinates](#coordinates)) to WGS84 coordinates. But if you want exact WGS84 coordinates, you can select that in the [config.py](config.py). 
+
+Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
+Construction year, floor area and intended use of buildings are also provided. Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
+table. 
+
+The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
+databases. 
+
+There are several settings you can tweak in the [config.py](config.py).
 
 ## Requirements
-* Python 3.11 or newer. Tested with Python 3.11 and 3.15.
-* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89 or WGS84, see [Coordinates](#coordinates)) with very high accuracy. The parser also needs the grid file in the [proj](proj) folder.
-  It is included, so you don't have to download anything.
+* Python 3.11 or newer.
+* The `pyproj` package. Recommended. It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89 or WGS84, see [Coordinates](#coordinates)) with high accuracy. The parser also needs the grid file in the [proj](proj) folder. It is included, so you don't have to download anything.
+  Without `pyproj` the parser still works, but it shows a warning and the coordinates are less accurate, see [Without pyproj](#without-pyproj).
+  The `WGS84` coordinates option needs `pyproj`.
 * The `psutil` package. Optional. It detects the number of physical CPU cores for the best performance.
   Without it the parser shows a warning and uses the number of logical CPU cores, which can be higher
   (see `cpu_cores_used` in [config.py](config.py)).
 
-The parser checks the requirements when it starts. If something is missing it tells you what to do.
-
 ## Installation
-You only have to do this once.
+You only have to do this once. Steps 3 to 5 are optional. Step 5 installs `pyproj`, which gives the most accurate coordinates, see [Requirements](#requirements).
 1. Install [Python](https://www.python.org/downloads/) 3.11 or newer.
 2. Download the BAG parser. Using git is recommended, because updates are easier:
    ```
@@ -63,7 +67,7 @@ You only have to do this once.
    ```
    source .venv/bin/activate
    ```
-5. Install the required packages:
+5. Install the recommended packages:
    ```
    pip install -r requirements.txt
    ```
@@ -214,6 +218,14 @@ see [Options](#options).
 * The RD positions that the parser reads from the BAG were compared with the BAG API of
   [PDOK](https://api.pdok.nl/kadaster/bag/ogc/v2) and were equal.
 
+### Without pyproj
+* The parser also works without `pyproj`. It then uses approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees,
+  with a constant correction of about 21 cm north and 18 cm east. This is accurate to about 7 cm on average and 23 cm at most,
+  checked against the 442 official GNSS stations. For all 10 million addresses the difference with the official
+  transformation is 6 cm on average and 23 cm at most. The parser shows a warning.
+* The method is saved in the `bag_info` table of the database (`coordinate_method`). The database tests use it.
+* What needs the official transformation needs `pyproj`: `coordinate_system = 'WGS84'` and validate_coordinates.py.
+
 ### ETRS89 and WGS84
 * ETRS89 is the European reference system that RD is officially tied to. The European INSPIRE directive and EUREF
   recommend it for geographic data.
@@ -230,7 +242,7 @@ see [Options](#options).
 Choose ETRS89 (default) or exact WGS84 with `coordinate_system` and `wgs84_epoch` in [config.py](config.py). The options are
 explained there. The parser shows the coordinate system and the epoch in the log, for example
 `coordinates: WGS84 for epoch 2026.784 (2026-10-12)`, and saves them in the `bag_info` table of the database
-(`coordinate_system`, `wgs84_epoch`, `parser_version` and `import_date`). The database tests use this table.
+(`coordinate_system`, `wgs84_epoch`, `coordinate_method`, `parser_version` and `import_date`). The database tests use this table.
 
 ### Checks
 * At startup the parser checks the conversion with 10 official GNSS stations. It stops with a clear message if something
@@ -253,7 +265,8 @@ explained there. The parser shows the coordinate system and the epoch in the log
 
 ## Breaking changes
 Changes that can break your queries or code. See the [changelog](CHANGELOG.md) for all changes.
-* V102 (12 October 2026): The BAG parser now requires the `pyproj` package (`pip install -r requirements.txt`).
+* V102 (12 October 2026): The BAG parser now uses the `pyproj` package (`pip install -r requirements.txt`) for the conversion.
+  Since V112 it uses approximation equations if `pyproj` is not installed.
   The latitude and longitude fields, and the geometry, are now calculated with the official RDNAPTRANS2018 transformation.
   They are about 0.3 meter different from earlier versions (up to 0.5 meter), because the earlier approximation equations
   were less accurate.

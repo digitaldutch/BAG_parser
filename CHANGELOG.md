@@ -1,5 +1,13 @@
 # Changelog
 
+## V112 - 12 October 2026
+* The parser works without any package. If `pyproj` is not installed it uses the old approximation equations (restored as
+  bag/rijksdriehoek.py) with a constant correction of about 21 cm north and 18 cm east. That is accurate to about 7 cm on average
+  and 23 cm at most (the equations were about 28 cm off). The parser shows a warning, and saves the method in the new
+  `coordinate_method` field of the `bag_info` table. The database tests use that method.
+* `coordinate_system = 'WGS84'` still needs `pyproj`. Without it the parser stops with a clear message.
+* `pyproj` is now recommended instead of required (readme, requirements.txt).
+
 ## V111 - 12 October 2026
 * export_to_csv.py: the option `-a` / `--all` is renamed to `-a` / `--adressen`, because it exports all address data, not all BAG data
   (#28). The old name `--all` still works.

@@ -765,8 +765,11 @@ class DatabaseSqlite:
         info = self.get_bag_info()
         coordinate_system = info.get('coordinate_system', coordinates.ETRS89)
         epoch = float(info['wgs84_epoch']) if info.get('wgs84_epoch') else None
+        method = info.get('coordinate_method')  # None for databases of older versions
         utils.print_log(f"info: coordinatenstelsel: {coordinates.describe(coordinate_system, epoch)}")
-        if coordinates.pyproj is None:
+        if method:
+            utils.print_log(f"info: omrekening RD: {coordinates.describe_method(method)}")
+        if (method or coordinates.RDNAPTRANS) != coordinates.APPROXIMATION and coordinates.pyproj is None:
             utils.print_log_warning("test: opgeslagen coordinaten niet gecontroleerd: pyproj is niet geinstalleerd")
         else:
             rows = self.fetchall("SELECT rd_x, rd_y, latitude, longitude FROM adressen "
@@ -774,7 +777,7 @@ class DatabaseSqlite:
             wrong_count = 0
             max_error = 0.0
             for rd_x, rd_y, latitude, longitude in rows:
-                lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y, coordinate_system, epoch)
+                lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y, coordinate_system, epoch, method)
                 error = coordinates.distance_meters(lat, lon, latitude, longitude)
                 max_error = max(max_error, error)
                 if error > coordinates.MAX_ERROR_METERS: wrong_count += 1
