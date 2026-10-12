@@ -5,8 +5,10 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 import os
+import re
 import shutil
 import sys
+import urllib.request
 from zipfile import ZipFile
 
 from logger import Logger
@@ -164,6 +166,18 @@ def bag_date_to_date(bag_date):
         return datetime(year=int(bag_date[0:4]), month=int(bag_date[5:7]), day=int(bag_date[8:10]))
     else:
         return None
+
+def get_latest_version(url, timeout=3):
+    """Get the version number from the 'version = N' line of the config.py file at url.
+    Returns None if the version can't be determined, for example if there is no internet connection."""
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            text = response.read(100_000).decode('utf-8', errors='replace')
+        match = re.search(r'^version\s*=\s*(\d+)', text, re.MULTILINE)
+        return int(match.group(1)) if match else None
+    except Exception:
+        return None
+
 
 def bag_date_today():
     return datetime.today().strftime("%Y-%m-%d")

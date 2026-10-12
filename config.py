@@ -1,8 +1,14 @@
 import importlib.util
 import locale
 
-version = 102
+version = 103
 version_date = '12 October 2026'
+
+# At startup the parser checks if a newer version is available on GitHub and shows a message if there is.
+# This makes one web request to GitHub. If GitHub can't be reached the check is skipped silently.
+# Set to False to disable. If you use a fork, change the URL to the config.py of your fork.
+check_for_updates = True
+update_check_url = 'https://raw.githubusercontent.com/digitaldutch/BAG_parser/master/config.py'
 
 # Dutch number formatting (e.g. 1.234.567) in log messages. Falls back to the system default if the locale is not installed.
 try:

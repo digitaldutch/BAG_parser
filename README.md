@@ -72,7 +72,9 @@ You only have to do this once.
 Do this each time you want a new SQLite database, for example when there is a new BAG release.
 1. Open a terminal in the BAG parser folder and activate the virtual environment (see Installation, step 4).
    You have to do this in every new terminal. PyCharm and other editors do this automatically.
-2. Optional: update the BAG parser to the latest version, and install new requirements if there are any:
+2. Optional: update the BAG parser to the latest version, and install new requirements if there are any.
+   The parser tells you at startup if a newer version is available. It checks this with one web request to GitHub.
+   Set `check_for_updates = False` in [config.py](config.py) to turn this off.
    ```
    git pull https://github.com/digitaldutch/BAG_parser
    pip install -r requirements.txt

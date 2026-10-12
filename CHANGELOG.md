@@ -1,5 +1,11 @@
 # Changelog
 
+## V103 - 12 October 2026
+* The parser now checks at startup if a newer version is available on GitHub and logs the result: a warning if there
+  is a newer version, or a message that you are using the latest version.
+  This makes one web request to GitHub. If GitHub can't be reached the check is skipped.
+  Set `check_for_updates = False` in config.py to turn it off.
+
 ## V102 - 12 October 2026
 * **Breaking:** Coordinates are now converted with the official RDNAPTRANS2018 transformation using the `pyproj` package
   and the NSGI correction grid (included in the new `proj` folder). This replaces the approximation equations.

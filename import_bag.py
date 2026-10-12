@@ -19,6 +19,22 @@ def main():
 
     utils.print_log(f"BAG parser version {config.version} | {config.version_date}")
 
+    if config.check_for_updates:
+        latest_version = utils.get_latest_version(config.update_check_url)
+        if latest_version is None:
+            utils.print_log("Version check: could not check for a new version (GitHub can't be reached)")
+        elif latest_version > config.version:
+            utils.print_log_warning(f"Version check: a new version of the BAG parser is available: V{latest_version} "
+                                    f"(this is V{config.version}). See CHANGELOG.md on GitHub for the changes. "
+                                    "Update with: git pull   and then: pip install -r requirements.txt")
+        elif latest_version == config.version:
+            utils.print_log(f"Version check: you are using the latest version (V{config.version})")
+        else:
+            utils.print_log(f"Version check: V{config.version} is newer than the latest version on GitHub "
+                            f"(V{latest_version})")
+    else:
+        utils.print_log("Version check: turned off (check_for_updates in config.py)")
+
     # Required packages
     errors = coordinates.check_requirements()
     if errors:
