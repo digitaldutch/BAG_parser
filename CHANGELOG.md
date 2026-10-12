@@ -1,5 +1,16 @@
 # Changelog
 
+## V102 - 12 October 2026
+* **Breaking:** Coordinates are now converted with the official RDNAPTRANS2018 transformation using the `pyproj` package
+  and the NSGI correction grid (included in the new `proj` folder). This replaces the approximation equations.
+  The latitude, longitude and geometry values change about 0.3 meter (up to 0.5 meter). This also closes #8.
+* `pyproj` is now a required package. See Installation in the readme.
+* The BAG parser checks the requirements at startup and shows clear error messages if `pyproj` or the grid file is missing
+  or the conversion is not accurate. A missing `psutil` package now gives a warning with install instructions.
+* New database tests: the stored latitude and longitude of a sample of addresses must match the official conversion of their RD coordinates (needs pyproj), and there must be addresses near the Lange Jan in Amersfoort.
+* The readme has new Requirements, Installation and Running the parser sections
+* Removed `bag/rijksdriehoek.py` and the document with the approximation equations
+
 ## V101 - 11 October 2026
 * Fixed: The ligplaatsen and standplaatsen "zonder locatie" tests checked `gebruiksdoelen` and could never find anything. They now check `object_type`.
 * Fixed: The "info: openbare ruimten" test line never showed as an error.

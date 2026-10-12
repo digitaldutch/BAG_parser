@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 import config
 
 import utils
-from bag import rijksdriehoek
+from bag import coordinates
 
 
 def parse_xml_file(file_xml, tag_name, data_init, object_tag_name, db_fields, db_tag_parent_fields):
@@ -167,7 +167,7 @@ def add_coordinates(rows, field_name):
             row["rd_x"] = rd_x
             row["rd_y"] = rd_y
             
-            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(rd_x, rd_y)
+            lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y)
             row["latitude"] = lat
             row["longitude"] = lon
 

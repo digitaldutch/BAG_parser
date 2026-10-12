@@ -10,7 +10,7 @@ import sys
 from zipfile import ZipFile
 
 from logger import Logger
-from bag import rijksdriehoek
+from bag import coordinates
 from enum import Enum
 
 
@@ -184,7 +184,7 @@ def bag_geometry_to_wgs_geojson(geometry, is_3d):
         # Ignore z coordinate in 3D as we don't use it
         for x, y, *z in coordinates_rd:
             x_rd, y_rd = float(x), float(y)
-            lat, lon = rijksdriehoek.rijksdriehoek_to_wgs84(x_rd, y_rd)
+            lat, lon = coordinates.rd_to_wgs84(x_rd, y_rd)
             ring_coordinates_wgs.append([lon, lat])
 
         coordinates_wgs.append(ring_coordinates_wgs)

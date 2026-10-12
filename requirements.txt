@@ -1,3 +1,6 @@
-# Optional: used to detect the number of physical CPU cores for multiprocessing.
-# Without it the parser uses 8 cores (see config.py). Everything else is in the Python standard library.
+# Required: converts the BAG coordinates (Rijksdriehoekscoordinaten) to WGS84 with centimeter accuracy.
+pyproj
+
+# Optional: detects the number of physical CPU cores for multiprocessing. Without it the parser uses 8 cores
+# (see config.py). You can remove this line if you don't want to install it.
 psutil

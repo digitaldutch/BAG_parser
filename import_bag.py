@@ -6,6 +6,7 @@ import time
 import utils
 import config
 from database_sqlite import DatabaseSqlite
+from bag import coordinates
 from bag.bag_parser import BagParser
 from bag.gemeente_parser import GemeentenParser
 
@@ -16,12 +17,22 @@ def main():
     utils.clear_log()
     utils.print_log(f"Python version {platform.python_version()}")
 
+    utils.print_log(f"BAG parser version {config.version} | {config.version_date}")
+
+    # Required packages
+    errors = coordinates.check_requirements()
+    if errors:
+        for error in errors:
+            utils.print_log_error(error)
+        sys.exit('Fix the error above and run the BAG parser again. See the Installation section in README.md')
+
+    # Optional packages
     utils.print_log(f"using {config.cpu_cores_used} CPU cores")
     if not config.has_psutil:
-        utils.print_log_error(
-            'CPU cores manually set in config.py. Install the psutil package to auto detect the correct amount of CPU cores.')
+        utils.print_log_warning(
+            "The optional package 'psutil' is not installed. The number of CPU cores is set manually in config.py. "
+            "Install psutil to detect the number of physical CPU cores automatically: pip install psutil")
 
-    utils.print_log(f"BAG parser version {config.version} | {config.version_date}")
     utils.print_log(f"start: parse BAG XML '{config.file_bag}' to sqlite database '{config.file_db_sqlite}'")
 
     if not os.path.exists(config.file_bag):

@@ -6,7 +6,7 @@
 ## TL;DR
 Converts in a few minutes the big, complex and hard to read XML Dutch addresses database (BAG or Basisregistratie Adressen
 en Gebouwen) into a user-friendly, file-based, blazingly fast SQLite database by running a single Python script. 
-No need to install any dependencies or a database server.
+No database server needed. Only Python and one small package ([pyproj](https://pyproj4.github.io/pyproj/)) are required.
 
 Another oneliner script will convert this SQLite database to CSV in 15 seconds. 
 
@@ -35,22 +35,61 @@ databases. There are a couple of options available in the [config.py](config.py)
 
 ## Requirements
 * Python 3.11 or newer. Tested with Python 3.11 and 3.15.
-* Optional: the `psutil` package (`pip install -r requirements.txt`). It is used to detect the number of physical CPU cores for the best performance. Without it the parser uses 8 cores.
+* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to WGS84 latitude and
+  longitude with centimeter accuracy. The parser also needs the grid file in the [proj](proj) folder.
+  It is included, so you don't have to download anything.
+* The `psutil` package. Optional. It detects the number of physical CPU cores for the best performance.
+  Without it the parser shows a warning and uses 8 cores (set in [config.py](config.py)).
+
+The parser checks the requirements when it starts. If something is missing it tells you what to do.
+
+## Installation
+You only have to do this once.
+1. Install [Python](https://www.python.org/downloads/) 3.11 or newer.
+2. Download the BAG parser. Using git is recommended, because updates are easier:
+   ```
+   git clone https://github.com/digitaldutch/BAG_parser
+   ```
+3. Open a terminal in the BAG parser folder and create a virtual environment (recommended):
+   ```
+   python -m venv .venv
+   ```
+   (PyCharm and other editors can create this environment for you.)
+4. Activate the virtual environment. On Windows:
+   ```
+   .venv\Scripts\activate
+   ```
+   On Linux and macOS:
+   ```
+   source .venv/bin/activate
+   ```
+5. Install the required packages:
+   ```
+   pip install -r requirements.txt
+   ```
+
+## Running the parser
+Do this each time you want a new SQLite database, for example when there is a new BAG release.
+1. Open a terminal in the BAG parser folder and activate the virtual environment (see Installation, step 4).
+   You have to do this in every new terminal. PyCharm and other editors do this automatically.
+2. Optional: update the BAG parser to the latest version, and install new requirements if there are any:
+   ```
+   git pull https://github.com/digitaldutch/BAG_parser
+   pip install -r requirements.txt
+   ```
+3. Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/gratis-download-bag-extract)
+   or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
+   and save the file as `bag.zip` in the `input` folder. Replace the old file if there is one.
+4. The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
+5. Set your options in [config.py](config.py). The defaults are fine to start with.
+6. Run the importer:
+   ```
+   python import_bag.py
+   ```
+7. Drink a cup of coffee for a few minutes ☕😎 while watching the progress bar.
+8. Open the SQLite database (`output/bag.sqlite`) with your favorite tool. I like [DBeaver](https://dbeaver.io/).
 
 ## Usage
-* Download or use git (recommended as updates are easier) to download the BAG parser.   
-  Git command for initial checkout:  
-  `git clone https://github.com/digitaldutch/BAG_parser`   
-  Update to the latest version:  
-  `git pull https://github.com/digitaldutch/BAG_parser`
-* Download the BAG (3 GB) from [kadaster.nl](https://www.kadaster.nl/-/gratis-download-bag-extract)
-  or directly from [pdok.nl](https://service.pdok.nl/kadaster/adressen/atom/v1_0/downloads/lvbag-extract-nl.zip)
-  and save the file as `bag.zip` in the `input` folder.
-* The [gemeenten.csv](input/gemeenten.csv) file is already included in the `input` folder, but you can [download the latest version from the CBS website](https://www.cbs.nl/nl-nl/onze-diensten/methoden/classificaties/overig/gemeentelijke-indelingen-per-jaar). Save it as `gemeenten.csv` in the input folder.
-* Set your options in [config.py](config.py)
-* Run `import_bag.py`
-* Drink a cup of coffee for a few minutes ☕😎 while watching the progress bar.
-* Open the SQLite database with your favorite tool. I like [DBeaver](https://dbeaver.io/).
 Here's an example query on SQLite database to get information about postcode 2514GL, huisnummer 78 (Paleis Noordeinde):
 ```SQL
 SELECT
@@ -125,8 +164,14 @@ The parser also does this as a final step if `delete_no_longer_needed_bag_tables
 An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the `nummer_id` of the hoofdadres. 
 
 ## Limitations and notes
-* The WGS84 coordinates are calculated using [approximation equations by F.H. Schreutelkamp and G.L. Strang van Hees](docs/Benaderingsformules_RD_WGS.pdf). This conversion has an error of a few decimeters. Don't use the 
-WGS84 coordinates if you need higher accuracy. 
+* Coordinates:
+  The Rijksdriehoekscoördinaten are converted with the official transformation
+  [RDNAPTRANS2018](https://www.nsgi.nl/rdnaptrans) of the NSGI, using `pyproj` and the correction grid in the
+  [proj](proj) folder. This is accurate to a few centimeters. The result is in ETRS89, which is used as WGS84.
+  The difference between ETRS89 and WGS84 is below one meter. It grows about 2.5 cm per year,
+  because Europe moves relative to the globe.
+  The grid file `nl_nsgi_rdtrans2018.tif` is © NSGI, license [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  See [proj/README.txt](proj/README.txt).
 * verblijfsobjecten table:  
   A verblijfsobject can have multiple panden, gebruiksdoelen and nevenadressen. These are stored in the 
   `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables. 
@@ -137,7 +182,11 @@ WGS84 coordinates if you need higher accuracy.
 * There are probably several more things missing that I don't know about. Feel free to file a [GitHub issue](https://github.com/digitaldutch/BAG_parser/issues).
 
 ## Breaking changes
-Changes to the database structure that can break your queries or code. See the [changelog](CHANGELOG.md) for all changes.
+Changes that can break your queries or code. See the [changelog](CHANGELOG.md) for all changes.
+* V102 (12 October 2026): The BAG parser now requires the `pyproj` package (`pip install -r requirements.txt`).
+  The latitude and longitude fields, and the geometry, are now calculated with the official RDNAPTRANS2018 transformation.
+  They are about 0.3 meter different from earlier versions (up to 0.5 meter), because the earlier approximation equations
+  were less accurate.
 * V99 (11 October 2026): In the `adressen` table `pand_id` is renamed to `pand_ids` and `gebruiksdoel` to `gebruiksdoelen` (still comma-separated). 
   `pand_ids` now contains all panden of an address. The `verblijfsobjecten` table no longer has the `pand_id`, 
   `gebruiksdoel` and `nevenadressen` fields. They moved to the new `verblijfsobject_panden`, 

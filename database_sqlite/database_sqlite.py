@@ -737,6 +737,32 @@ class DatabaseSqlite:
         total_error_count += count
         utils.print_log_check("test: standplaatsen zonder locatie: " + str(count), count > 0)
 
+        # De opgeslagen latitude en longitude moeten overeenkomen met de officiele RDNAPTRANS2018 conversie van rd_x en
+        # rd_y. Dit controleert een steekproef. Een database van een oudere versie (benaderingsformules) wijkt ~0.3 m af.
+        from bag import coordinates
+        if coordinates.pyproj is None:
+            utils.print_log_warning("test: opgeslagen coordinaten niet gecontroleerd: pyproj is niet geinstalleerd")
+        else:
+            rows = self.fetchall("SELECT rd_x, rd_y, latitude, longitude FROM adressen "
+                                 "WHERE typeof(latitude) = 'real' AND rowid % 10000 = 0;")
+            wrong_count = 0
+            max_error = 0.0
+            for rd_x, rd_y, latitude, longitude in rows:
+                lat, lon = coordinates.rd_to_wgs84(rd_x, rd_y)
+                error = coordinates.distance_meters(lat, lon, latitude, longitude)
+                max_error = max(max_error, error)
+                if error > coordinates.MAX_ERROR_METERS: wrong_count += 1
+            if wrong_count > 0: total_error_count += 1
+            utils.print_log_check(f"test: opgeslagen coordinaten wijken af van RDNAPTRANS2018: {wrong_count} van "
+                                  f"{len(rows)} adressen (max {max_error:.3f} m)", wrong_count > 0)
+
+        # Rondom de Onze Lieve Vrouwetoren (Lange Jan) in Amersfoort (52.15517, 5.38720) moeten adressen liggen
+        count = self.fetchone("SELECT COUNT(*) FROM adressen "
+                              "WHERE latitude BETWEEN 52.1543 AND 52.1561 AND longitude BETWEEN 5.3857 AND 5.3887;")
+        is_error = count == 0
+        if is_error: total_error_count += 1
+        utils.print_log_check(f"test: adressen binnen 100 meter van de Lange Jan in Amersfoort: {count}", is_error)
+
         # Sommige nummers hebben een andere woonplaats dan de openbare ruimte waar ze aan liggen.
         woonplaats_id = self.fetchone("SELECT woonplaats_id FROM adressen WHERE postcode='1181BN' AND huisnummer=1;")
         is_error = woonplaats_id != 1050
