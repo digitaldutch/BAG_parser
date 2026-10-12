@@ -38,7 +38,8 @@ databases. There are a couple of options available in the [config.py](config.py)
 * The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89) with very high accuracy. The parser also needs the grid file in the [proj](proj) folder.
   It is included, so you don't have to download anything.
 * The `psutil` package. Optional. It detects the number of physical CPU cores for the best performance.
-  Without it the parser shows a warning and uses 8 cores (set in [config.py](config.py)).
+  Without it the parser shows a warning and uses the number of logical CPU cores, which can be higher
+  (see `cpu_cores_used` in [config.py](config.py)).
 
 The parser checks the requirements when it starts. If something is missing it tells you what to do.
 

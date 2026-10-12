@@ -2,6 +2,6 @@
 # accuracy.
 pyproj
 
-# Optional: detects the number of physical CPU cores for multiprocessing. Without it the parser uses 8 cores
-# (see config.py). You can remove this line if you don't want to install it.
+# Optional: detects the number of physical CPU cores for multiprocessing. Without it the parser uses the number of
+# logical CPU cores (see config.py). You can remove this line if you don't want to install it.
 psutil

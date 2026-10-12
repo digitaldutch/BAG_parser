@@ -1,5 +1,10 @@
 # Changelog
 
+## V109 - 12 October 2026
+* Without the optional `psutil` package the parser now uses the number of logical CPU cores (os.cpu_count) instead of a fixed
+  8 cores. The warning shows the number that is used.
+* On Windows the number of CPU cores used is limited to 61, the maximum of a process pool.
+
 ## V108 - 12 October 2026
 * New option `coordinate_system` in config.py: `'ETRS89'` (default, as before) or `'WGS84'` for exact WGS84 coordinates with a
   time-dependent transformation. With `wgs84_epoch` you choose the epoch (date), by default the date of the import.

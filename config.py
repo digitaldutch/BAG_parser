@@ -1,7 +1,8 @@
 import importlib.util
 import locale
+import os
 
-version = 108
+version = 109
 version_date = '12 October 2026'
 
 # At startup the parser checks if a newer version is available on GitHub.
@@ -68,16 +69,21 @@ parse_geometries = False
 # Set to 0 if you prefer warning messages and manually check and correct these entries yourself.
 delete_addresses_without_public_spaces_if_less_than = 100
 
-# The parser uses multiprocessing to speed up parsing the data. For the best performance set to the number of
-# physical (not logical) CPU cores in your system. Python multiprocessing does not use hyper-threading.
-# The psutil module automatically determines the physical CPU core count. If it is not installed,
-# it defaults to the manual-specified value (8).
+# The parser uses multiprocessing to speed up parsing the data. The number of physical CPU cores is a good choice.
+# Using logical cores hardly makes a difference. The psutil module automatically determines the physical CPU core count.
+# If it is not installed, the number of logical CPU cores is used (os.cpu_count).
+# You can also set cpu_cores_used yourself below, after these lines.
 
 has_psutil = importlib.util.find_spec("psutil") is not None
 if has_psutil:
     import psutil
     cpu_cores_used = psutil.cpu_count(False)
 else:
-    cpu_cores_used = 8
+    # os.cpu_count() returns None if the number can't be determined
+    cpu_cores_used = os.cpu_count() or 8
+
+# Windows can't start more than 61 processes in a process pool
+if os.name == 'nt':
+    cpu_cores_used = min(cpu_cores_used, 61)
 
 
