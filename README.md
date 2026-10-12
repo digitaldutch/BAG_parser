@@ -27,7 +27,7 @@ expect named
 ## What this parser does
 This Python utility parses the BAG database and converts it into a clean, easy to read & use SQLite database.
 Municipalities (gemeenten) and provinces (provincies) are added. Rijksdriehoekscoördinaten coordinates are converted 
-to standard WGS84 latitude and longitude coordinates. Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
+to latitude and longitude coordinates in ETRS89, the European standard, which can be used as WGS84 (see [Limitations and notes](#limitations-and-notes)). Invalid (dummy) bouwjaar and oppervlakte fields are removed. 
 Construction year, floor area and intended use of buildings are also provided. 
 Several tables (nummers, verblijfsobjecten, panden, ligplaatsen and standplaatsen) are merged into a general 'adressen'
 table. The SQLite database can be used directly as a source to generate a *.csv file or to update your own addresses 
@@ -35,8 +35,7 @@ databases. There are a couple of options available in the [config.py](config.py)
 
 ## Requirements
 * Python 3.11 or newer. Tested with Python 3.11 and 3.15.
-* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to WGS84 latitude and
-  longitude with centimeter accuracy. The parser also needs the grid file in the [proj](proj) folder.
+* The `pyproj` package. **Required.** It converts the BAG coordinates (Rijksdriehoekscoördinaten) to latitude and longitude (ETRS89) with very high accuracy. The parser also needs the grid file in the [proj](proj) folder.
   It is included, so you don't have to download anything.
 * The `psutil` package. Optional. It detects the number of physical CPU cores for the best performance.
   Without it the parser shows a warning and uses 8 cores (set in [config.py](config.py)).
@@ -154,6 +153,16 @@ Export statistics of 5 character postal code groups (e.g. 1000A). ~10s
 -p6, --postcode6  
 Export statistics of 6 character postal code groups (e.g. 1000AA). ~10s
 
+### [validate_coordinates.py](validate_coordinates.py)
+Validates the conversion of the Rijksdriehoekscoördinaten against the official GNSS stations of the Kadaster
+([RDinfo](https://api.pdok.nl/kadaster/rdinfo/ogc/v1), open data on PDOK). It downloads about 440 stations (6.7 MB), converts
+their RD coordinates and compares the result with their official ETRS89 coordinates. It needs internet access.
+The parser also checks 10 of these stations each time it starts. These are in `bag/coordinates.py`.
+Run this script now and then, for example after updating `pyproj`, because the Kadaster can update the data.
+
+-u, --update-reference-points  
+Update the 10 reference points in `bag/coordinates.py` with the latest RDinfo data.
+
 ### [test_sqlite_db.py](test_sqlite_db.py)
 Checks the SQLite database for info and errors. `import_bag.py` also performs these tests after parsing.
 
@@ -167,13 +176,23 @@ An adres is a nevenadres if the `hoofd_nummer_id` field is set. It points to the
 
 ## Limitations and notes
 * Coordinates:
-  The Rijksdriehoekscoördinaten are converted with the official transformation
-  [RDNAPTRANS2018](https://www.nsgi.nl/rdnaptrans) of the NSGI, using `pyproj` and the correction grid in the
-  [proj](proj) folder. This is accurate to a few centimeters. The result is in ETRS89, which is used as WGS84.
-  The difference between ETRS89 and WGS84 is below one meter. It grows about 2.5 cm per year,
-  because Europe moves relative to the globe.
-  The grid file `nl_nsgi_rdtrans2018.tif` is © NSGI, license [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-  See [proj/README.txt](proj/README.txt).
+  * The BAG has Rijksdriehoekscoördinaten (RD). The parser converts them to latitude and longitude in **ETRS89**
+    (EPSG:4258). This is the European reference system that RD is officially tied to, and the one that the European
+    INSPIRE directive and EUREF recommend for geographic data.
+  * The conversion uses the official transformation [RDNAPTRANS2018](https://www.nsgi.nl/rdnaptrans) of the NSGI, with
+    `pyproj` and the correction grid in the [proj](proj) folder. It was validated against the 442 official GNSS stations
+    of the Kadaster ([RDinfo](https://api.pdok.nl/kadaster/rdinfo/ogc/v1)): the difference is at most 0.3 millimeter.
+  * The latitude and longitude are used as WGS84 (the system of GPS, OpenStreetMap and Google Maps) without a further
+    transformation. The [Geonovum guideline](https://docs.geostandaarden.nl/crs/crs/) (section 3.3.2.2.1) describes this
+    as treating WGS 84 as equal to ETRS89, which is suited for data from RD that is used for visualisation or combined
+    with other data. PDOK, the open data platform of the Kadaster, also serves its ETRS89 and WGS84 coordinates as the
+    same values.
+  * The difference: ETRS89 is fixed to the Eurasian plate and WGS84 to the globe. They were equal in 1989. The difference
+    in the Netherlands was about 88 cm on 1 January 2025 and grows about 2.4 cm per year. The ETRS89 coordinates of a
+    point stay the same, the WGS84 coordinates of that point slowly change. This is negligible for maps and apps.
+    If you need exact WGS84 coordinates for a specific date, you have to apply a time-dependent transformation yourself.
+  * The grid file `nl_nsgi_rdtrans2018.tif` is © NSGI, license [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+    See [proj/README.txt](proj/README.txt).
 * verblijfsobjecten table:  
   A verblijfsobject can have multiple panden, gebruiksdoelen and nevenadressen. These are stored in the 
   `verblijfsobject_panden`, `verblijfsobject_gebruiksdoelen` and `verblijfsobject_nevenadressen` tables. 

@@ -1,4 +1,5 @@
-# Required: converts the BAG coordinates (Rijksdriehoekscoordinaten) to WGS84 with centimeter accuracy.
+# Required: converts the BAG coordinates (Rijksdriehoekscoordinaten) to latitude and longitude (ETRS89) with very high
+# accuracy.
 pyproj
 
 # Optional: detects the number of physical CPU cores for multiprocessing. Without it the parser uses 8 cores

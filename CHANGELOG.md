@@ -1,5 +1,15 @@
 # Changelog
 
+## V106 - 12 October 2026
+* The startup check of the coordinate conversion now uses 10 official GNSS stations of the Kadaster (RDinfo, open data)
+  as reference. These have official RD and ETRS89 coordinates. The maximum allowed difference is 1 cm (was 3 cm).
+  The conversion was validated against all 442 GNSS stations of RDinfo: the maximum difference is 0.3 mm.
+* New script validate_coordinates.py: downloads the GNSS stations from RDinfo and validates the conversion against all of
+  them. With `--update-reference-points` it updates the table with reference points with the latest RDinfo data.
+* Readme: the coordinates are now described as ETRS89 (the European standard), used as WGS84, with the background and the sources
+  (Geonovum guideline, PDOK). The difference between ETRS89 and WGS84 is about 88 cm (1 January 2025) and grows 2.4 cm per year.
+  The same is explained in the comments of coordinates.py, in the error messages and in requirements.txt.
+
 ## V105 - 12 October 2026
 * The database test for addresses near the Lange Jan is replaced by a test that checks that all addresses are inside
   the borders of the Netherlands. This catches wrong coordinates for every address, for example swapped latitude and longitude.

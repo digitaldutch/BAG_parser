@@ -1,7 +1,7 @@
 import importlib.util
 import locale
 
-version = 105
+version = 106
 version_date = '12 October 2026'
 
 # At startup the parser checks if a newer version is available on GitHub and shows a message if there is.
